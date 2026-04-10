@@ -1,0 +1,25 @@
+{
+  "endpoints": [
+    {
+      "id": "get_clients",
+      "method": "GET",
+      "url": "/api/clients",
+      "intent": "GET",
+      "keywords": ["clients", "liste", "afficher"]
+    },
+    {
+      "id": "filter_clients",
+      "method": "GET",
+      "url": "/odata/ClientOdata",
+      "intent": "FILTER",
+      "keywords": ["clients", "filtre", "ville", "condition"]
+    },
+    {
+      "id": "get_stats_ventes",
+      "method": "GET",
+      "url": "/api/stats/ventes",
+      "intent": "AGGREGATE",
+      "keywords": ["statistiques", "ventes", "total", "chiffre"]
+    }
+  ]
+}

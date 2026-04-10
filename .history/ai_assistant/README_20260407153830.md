@@ -1,0 +1,145 @@
+# LangGraph Skeleton (Point 1)
+
+This folder contains a runnable LangGraph skeleton for the ERP AI assistant.
+
+## What is implemented
+- Graph structure with main nodes:
+  - classify_question
+  - retrieve_candidate_endpoints
+  - select_endpoint_and_params
+  - call_webapi_stub
+  - evidence_filter
+  - answer_generation
+  - answer_validation
+- Local cache output in `ai_assistant/data/cache/last_api_result.json`
+- Optional Ollama integration for final answer generation
+
+## Run
+From project root:
+
+1. Activate venv
+2. Run:
+
+```
+python ai_assistant/langgraph_skeleton.py
+```
+
+## Use your real endpoints.json
+Set environment variable before running:
+
+PowerShell:
+
+```
+$env:ERP_ENDPOINTS_JSON = "C:/Users/brahim/OneDrive/Bureau/example erp stage pfe/aierpjava/test/src/main/resources/endpoints.json"
+$env:ERP_API_BASE_URL = "http://localhost:5000"
+python ai_assistant/langgraph_skeleton.py
+```
+
+You can also provide the WebApi project folder and let the script auto-detect URL from `Properties/launchSettings.json`:
+
+```
+$env:ERP_WEBAPI_PROJECT_DIR = "C:/Users/brahim/OneDrive/Bureau/stage2026/web/Webservices_webclient/stagepfe26/WebApi"
+python ai_assistant/langgraph_skeleton.py
+```
+
+If your WebApi uses auth:
+
+```
+$env:ERP_API_BEARER_TOKEN = "your_token_here"
+```
+
+## Enable Ollama for answer generation
+
+```
+$env:USE_OLLAMA = "1"
+$env:OLLAMA_MODEL_ROUTER = "deepseek-coder:6.7b"
+$env:OLLAMA_MODEL_ANSWER = "llama3.1:8b"
+python ai_assistant/langgraph_skeleton.py
+```
+
+Keep `USE_OLLAMA=0` (default) if Ollama is not running yet.
+
+## One-command local stack startup
+
+Use the bootstrap script to auto-start dependencies and launch LangGraph:
+
+```
+./ai_assistant/start_stack.ps1
+```
+
+Start with Ollama + dual models:
+
+```
+./ai_assistant/start_stack.ps1 -UseOllama -RouterModel "deepseek-coder:6.7b" -AnswerModel "llama3.1:8b"
+```
+
+If models are missing, auto-pull them:
+
+```
+./ai_assistant/start_stack.ps1 -UseOllama -AutoPullModels
+```
+
+What it does:
+- Starts Ollama server if needed.
+- Starts WebApi from `ERP_WEBAPI_PROJECT_DIR` if needed.
+- Detects WebApi URLs from `Properties/launchSettings.json`.
+- Sets environment variables and runs LangGraph.
+
+## One command for the full project
+
+From the project root, run:
+
+```
+powershell.exe -ExecutionPolicy Bypass -File .\start_all.ps1
+```
+
+Dry run:
+
+```
+powershell.exe -ExecutionPolicy Bypass -File .\start_all.ps1 -DryRun
+```
+
+This launches:
+- Ollama
+- WebApi
+- LangGraph
+- React frontend
+
+## Endpoint overrides (safe correction)
+
+Use `ai_assistant/data/endpoint_overrides.json` to force exact route mapping by endpoint ID.
+
+Example:
+
+```
+{
+  "get_bl_clients": "/api/BlClient/GetAllBlClients",
+  "get_clients": "/api/Client/GetAllClients"
+}
+```
+
+Custom file path is supported:
+
+```
+$env:ERP_ENDPOINT_OVERRIDES_JSON = "C:/path/to/endpoint_overrides.json"
+```
+
+`endpoint_overrides.json` stays the primary mapping for your business endpoint IDs.
+
+## Auto-load other WebApi APIs
+
+The assistant can enrich endpoint candidates from live Swagger (`/swagger/v1/swagger.json`) so it can use additional GET APIs exposed by WebApi.
+
+Enabled by default:
+
+```
+$env:ERP_LOAD_SWAGGER_ENDPOINTS = "1"
+```
+
+Disable if you want only your curated endpoint file:
+
+```
+$env:ERP_LOAD_SWAGGER_ENDPOINTS = "0"
+```
+
+When enrichment is enabled, generated Swagger endpoints are filtered by inferred domain from the user question (`commercial`, `stock`, `finance`, `rh`, `achat`, `general`) to reduce noisy routing.

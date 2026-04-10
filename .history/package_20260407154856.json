@@ -1,0 +1,11 @@
+{
+  "name": "javaerp-fullstack",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start:all": "powershell.exe -ExecutionPolicy Bypass -File ./start_all.ps1",
+    "start:all:dry": "powershell.exe -ExecutionPolicy Bypass -File ./start_all.ps1 -DryRun",
+    "start:backend": "powershell.exe -ExecutionPolicy Bypass -File ./ai_assistant/start_stack.ps1",
+    "start:frontend": "npm --prefix ./frontend run dev"
+  }
+}

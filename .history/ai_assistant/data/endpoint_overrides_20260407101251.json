@@ -1,0 +1,10 @@
+{
+  "get_bl_clients": "/api/BlClient/GetAllBlClients",
+  "get_clients": "/api/Client/GetAllClients",
+  "get_fournisseurs": "/api/Fournisseur",
+  "filter_clients": "/odata/ClientOdata",
+  "filter_commandes": "/odata/CommandeClientOdata",
+  "filter_articles": "/odata/ArticleOdata",
+  "get_historiques": "/odata/HistoriquesOdata",
+  "get_traductions": "/odata/TranslationOdata"
+}

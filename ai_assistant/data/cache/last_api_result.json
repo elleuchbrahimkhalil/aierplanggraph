@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-04-10T10:49:42.010508+00:00",
+  "endpoints": [
+    "webapi_get_api_b2b_intermediate_getallarticles"
+  ],
+  "params": {},
+  "calls": [
+    {
+      "endpoint": "webapi_get_api_b2b_intermediate_getallarticles",
+      "url": "/api/B2b_intermediate/GetAllArticles",
+      "resolvedUrl": "/api/B2b_intermediate/GetAllArticles",
+      "fullUrl": null,
+      "query": {},
+      "statusCode": null,
+      "dataCount": 0,
+      "error": "401 Client Error: Unauthorized for url: http://localhost:5006/api/B2b_intermediate/GetAllArticles",
+      "raw": null
+    }
+  ],
+  "data": []
+}

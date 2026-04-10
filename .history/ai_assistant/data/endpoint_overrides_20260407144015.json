@@ -1,0 +1,40 @@
+{
+  "get_clients": "/api/Client/GetAllClients",
+  "get_client_by_id": "/api/Client/GetClientByCode/{code}",
+
+  "get_commandes": "/odata/CommandeClientOdata",
+  "get_commande_by_id": "/api/CommandeClient/GetById",
+
+  "get_articles": "/api/B2b_intermediate/GetAllArticles",
+  "get_article_by_id": "/api/CommandeClient/GetArticleById",
+
+  "get_stocks": "/odata/StockOdata",
+  "get_stock_article": "/odata/StockOdata",
+
+  "get_employes": "/api/DemandeConge/GetAllEmployes",
+  "get_employe_by_id": "/odata/PaieEmployesOdata",
+
+  "get_fiches_paie": "/odata/PaieFichesOdata",
+  "get_fiche_paie_by_id": "/odata/PaieFichesOdata",
+  "get_conges": "/odata/DemandeCongeOdata",
+
+  "get_paiements": "/odata/PaiementClientOdata",
+  "get_bl_clients": "/api/BlClient/GetAllBlClients",
+  "get_fournisseurs": "/api/Fournisseur",
+  "get_factures_clients": "/api/Paiements/GetFactClt",
+  "get_bl_fournisseurs": "/api/BlFrs/GetList",
+  "get_factures_fournisseurs": "/api/Paiements/GetFactFrs",
+  "get_depenses": "/odata/DepenseOdata",
+  "get_transferts_argent": "/odata/TransfertArgentOdata",
+  "get_suivi_clients": "/odata/FinanceSuiviOdata",
+  "get_suivi_fournisseurs": "/odata/FinanceSuiviOdata",
+  "get_stats_ventes": "/api/StatsVente/StatsVenteParArticle",
+  "get_stats_ventes_client": "/api/Reports/commande_client-report",
+  "get_stats_ventes_article": "/api/StatsVente/StatsVenteParArticle",
+
+  "filter_clients": "/odata/ClientOdata",
+  "filter_commandes": "/odata/CommandeClientOdata",
+  "filter_articles": "/odata/ArticleOdata",
+  "get_historiques": "/odata/HistoriquesOdata",
+  "get_traductions": "/odata/TranslationOdata"
+}
