@@ -33,7 +33,11 @@ def infer_role(text: str) -> str:
 
 def infer_intent(text: str) -> str:
     lowered = text.lower()
-    if any(term in lowered for term in ["stat", "report", "vente", "chiffre", "dashboard", "top", "total", "count"]):
+    tokens = set(split_tokens(lowered))
+    if any(term in lowered for term in ["stat", "report", "vente", "chiffre", "dashboard", "top", "total"]):
+        return "AGGREGATE"
+    # "count" must be a standalone token to avoid matching "discount", "account", etc.
+    if "count" in tokens:
         return "AGGREGATE"
     if any(term in lowered for term in ["filter", "filtre", "search", "find", "getby", "byid", "bycode", "/{", "getbyid"]):
         return "FILTER"
@@ -315,11 +319,23 @@ def _examples_for_label(label: str, query_parameters: list[str]) -> list[str]:
             "afficher le code client",
             "afficher le téléphone du client",
         ]
+    if "utilisateur" in label:
+        return [
+            "afficher les utilisateurs web",
+            "afficher la liste des utilisateurs",
+        ]
     if "détail" in label and "article" in label:
         return [
             "afficher les détails des articles",
             "afficher la description d'un article",
             "afficher les caractéristiques d'un article",
+        ]
+    if "promotion" in label or "remise" in label:
+        return [
+            "afficher les promotions",
+            "afficher les remises B2B",
+            "afficher les promotions en cours",
+            "afficher les réductions disponibles",
         ]
     if "article" in label or "B2B" in label:
         return [

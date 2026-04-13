@@ -46,11 +46,8 @@
       "responseFormat": "Object",
       "description": "Retourne la liste des utilisateurs web B2B.",
       "examples": [
-        "afficher les articles",
-        "afficher le code article",
-        "afficher le prix des articles",
-        "afficher les articles disponibles",
-        "afficher les détails des articles"
+        "afficher les utilisateurs web",
+        "afficher la liste des utilisateurs"
       ],
       "role": "general",
       "tags": [
@@ -147,7 +144,7 @@
       "id": "webapi_get_api_b2b_intermediate_get_discount_promotion",
       "method": "GET",
       "url": "/api/B2b_intermediate/GetDiscountPromotion",
-      "intent": "AGGREGATE",
+      "intent": "GET",
       "keywords": [
         "b2b",
         "intermediate",
@@ -158,13 +155,12 @@
       "queryParameters": [],
       "requiredParameters": [],
       "responseFormat": "Object",
-      "description": "Retourne un rapport ou des statistiques sur promotions et remises B2B.",
+      "description": "Retourne la liste des promotions et remises B2B.",
       "examples": [
-        "afficher les articles",
-        "afficher le code article",
-        "afficher le prix des articles",
-        "afficher les articles disponibles",
-        "afficher les détails des articles"
+        "afficher les promotions",
+        "afficher les remises B2B",
+        "afficher les promotions en cours",
+        "afficher les réductions disponibles"
       ],
       "role": "general",
       "tags": [
@@ -1938,7 +1934,7 @@
       "id": "webapi_get_api_depenses_get_count_depense",
       "method": "GET",
       "url": "/api/Depenses/GetCountDepense",
-      "intent": "AGGREGATE",
+      "intent": "GET",
       "keywords": [
         "depenses",
         "count",
@@ -1948,7 +1944,7 @@
       "queryParameters": [],
       "requiredParameters": [],
       "responseFormat": "Object",
-      "description": "Retourne le nombre de dépenses.",
+      "description": "Retourne la liste des nombre de dépenses.",
       "examples": [
         "afficher les dépenses",
         "afficher les dépenses par catégorie",
@@ -2839,7 +2835,7 @@
       "id": "webapi_get_api_transfert_argent_get_count_transfert",
       "method": "GET",
       "url": "/api/TransfertArgent/GetCountTransfert",
-      "intent": "AGGREGATE",
+      "intent": "GET",
       "keywords": [
         "transfert",
         "argent",
@@ -2849,7 +2845,7 @@
       "queryParameters": [],
       "requiredParameters": [],
       "responseFormat": "Object",
-      "description": "Retourne le nombre de transferts d'argent.",
+      "description": "Retourne la liste des nombre de transferts d'argent.",
       "examples": [
         "afficher les transferts d'argent",
         "afficher le montant des transferts",
