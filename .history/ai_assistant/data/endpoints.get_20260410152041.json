@@ -1,0 +1,3980 @@
+{
+  "endpoints": [
+    {
+      "id": "webapi_get_api_agence_bancaire_get_agence_by_id",
+      "method": "GET",
+      "url": "/api/AgenceBancaire/GetAgenceById",
+      "intent": "GET",
+      "keywords": [
+        "agence",
+        "bancaire",
+        "code"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "code"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/AgenceBancaire/GetAgenceById",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "AgenceBancaire"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_all_web_users",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/AllWebUsers",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "web",
+        "users"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/AllWebUsers",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_all_articles",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetAllArticles",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "articles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetAllArticles",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_articles_voitures",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetArticlesVoitures",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "articles",
+        "voitures"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetArticlesVoitures",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_categories",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetCategories",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "categories"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetCategories",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_discount_promotion",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetDiscountPromotion",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "discount",
+        "promotion"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetDiscountPromotion",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_familles_parents",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetFamillesParents",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "familles",
+        "parents"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetFamillesParents",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_marques",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetMarques",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "marques"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetMarques",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_sous_familles",
+      "method": "GET",
+      "url": "/api/B2b_intermediate/GetSousFamilles",
+      "intent": "GET",
+      "keywords": [
+        "b2b",
+        "intermediate",
+        "sous",
+        "familles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/B2b_intermediate/GetSousFamilles",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "B2b_intermediate"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_all_bl_clients",
+      "method": "GET",
+      "url": "/api/BlClient/GetAllBlClients",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "clients"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetAllBlClients",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_all_clients",
+      "method": "GET",
+      "url": "/api/BlClient/GetAllClients",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "clients"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetAllClients",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_all_commandes",
+      "method": "GET",
+      "url": "/api/BlClient/GetAllCommandes",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "commandes",
+        "num"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "numBlClient"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetAllCommandes",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_all_depots",
+      "method": "GET",
+      "url": "/api/BlClient/GetAllDepots",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "depots"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetAllDepots",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_all_lots",
+      "method": "GET",
+      "url": "/api/BlClient/GetAllLots",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "lots",
+        "code",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "codeArticle"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetAllLots",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_article_blclt",
+      "method": "GET",
+      "url": "/api/BlClient/GetArticleBlclt",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "article",
+        "blclt",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "articleClt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetArticleBlclt",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_bl_clt_avec_detail",
+      "method": "GET",
+      "url": "/api/BlClient/GetBlCltAvecDetail",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "clt",
+        "avec",
+        "detail",
+        "code"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "code"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetBlCltAvecDetail",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_client_get_by_id",
+      "method": "GET",
+      "url": "/api/BlClient/GetById",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "num",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_bl_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlClient/GetById",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_frs_get_article_bl_frs",
+      "method": "GET",
+      "url": "/api/BlFrs/GetArticleBlFrs",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "articleBlFrs"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlFrs/GetArticleBlFrs",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "BlFrs"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_frs_get_bl_frs",
+      "method": "GET",
+      "url": "/api/BlFrs/GetBlFrs",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "blFrs"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlFrs/GetBlFrs",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "BlFrs"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bl_frs_get_list",
+      "method": "GET",
+      "url": "/api/BlFrs/GetList",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs",
+        "list"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BlFrs/GetList",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "BlFrs"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_entree_get",
+      "method": "GET",
+      "url": "/api/BonEntree/Get",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "entree",
+        "num",
+        "be"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_be"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonEntree/Get",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "BonEntree"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_entree_get_details",
+      "method": "GET",
+      "url": "/api/BonEntree/GetDetails",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "entree",
+        "details",
+        "num",
+        "be"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_be"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonEntree/GetDetails",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "BonEntree"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_entree_get_list",
+      "method": "GET",
+      "url": "/api/BonEntree/GetList",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "entree",
+        "list"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonEntree/GetList",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "BonEntree"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert",
+      "method": "GET",
+      "url": "/api/BonTransfert",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_getall_depo",
+      "method": "GET",
+      "url": "/api/BonTransfert/GETAllDepo",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "getall",
+        "depo"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GETAllDepo",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_all_articles",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetAllArticles",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "articles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetAllArticles",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_all_lots",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetAllLots",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "lots",
+        "code",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "codeArticle"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetAllLots",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_bon_transfert_by_id_avec_details",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetBonTransfertByIdAvecDetails",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "avec",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetBonTransfertByIdAvecDetails",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_bon_transfert_by_id_sans_details",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetBonTransfertByIdSansDetails",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "sans",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetBonTransfertByIdSansDetails",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_by_num_be",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetByNumBe",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "num",
+        "be"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_be"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetByNumBe",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_get_detail_by_id",
+      "method": "GET",
+      "url": "/api/BonTransfert/GetDetailById",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "detail"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/GetDetailById",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_details",
+      "method": "GET",
+      "url": "/api/BonTransfert/details",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/details",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_details_num_be",
+      "method": "GET",
+      "url": "/api/BonTransfert/details/{num_be}",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "details",
+        "num",
+        "be"
+      ],
+      "routeParameters": [
+        "num_be"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "num_be"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfert/details/{num_be}",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfert"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_getall_depo",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GETAllDepo",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "getall",
+        "depo"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GETAllDepo",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_get_all_articles",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GetAllArticles",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "articles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GetAllArticles",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_get_bon_transfert_by_id_avec_details",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GetBonTransfertByIdAvecDetails",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "avec",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GetBonTransfertByIdAvecDetails",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_get_bon_transfert_by_id_sans_details",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GetBonTransfertByIdSansDetails",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "sans",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GetBonTransfertByIdSansDetails",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_get_by_num_be",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GetByNumBe",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "num",
+        "be"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_be"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GetByNumBe",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_get_detail_by_id",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/GetDetailById",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "detail"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/GetDetailById",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_details",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/details",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/details",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_details_num_be",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/details/{num_be}",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "details",
+        "num",
+        "be"
+      ],
+      "routeParameters": [
+        "num_be"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "num_be"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/details/{num_be}",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_bon_transfert_demande_non_valides",
+      "method": "GET",
+      "url": "/api/BonTransfertDemande/non-valides",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "non",
+        "valides",
+        "cod",
+        "dep2"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_dep2"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/BonTransfertDemande/non-valides",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemande"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_client_get_all_clients",
+      "method": "GET",
+      "url": "/api/Client/GetAllClients",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "clients"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Client/GetAllClients",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Client"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_client_get_client_by_code_code",
+      "method": "GET",
+      "url": "/api/Client/GetClientByCode/{code}",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "code"
+      ],
+      "routeParameters": [
+        "code"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "code"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Client/GetClientByCode/{code}",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Client"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_client_get_famille_clt_byid_code",
+      "method": "GET",
+      "url": "/api/Client/GetFamilleCltByid/{code}",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "famille",
+        "clt",
+        "byid",
+        "code"
+      ],
+      "routeParameters": [
+        "code"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "code"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Client/GetFamilleCltByid/{code}",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Client"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_client_get_familles_client",
+      "method": "GET",
+      "url": "/api/Client/GetFamillesClient",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "familles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Client/GetFamillesClient",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Client"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_client_get_zones_client",
+      "method": "GET",
+      "url": "/api/Client/GetZonesClient",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "zones"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Client/GetZonesClient",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Client"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_all_clients",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetAllClients",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "clients"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetAllClients",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_article",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetArticle",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetArticle",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_article_by_id",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetArticleById",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetArticleById",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_by_id",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetById",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "cmd"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cmd"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetById",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_commandes_clients_by_id_avec_details",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetCommandesClientsByIdAvecDetails",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "commandes",
+        "clients",
+        "avec",
+        "details"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetCommandesClientsByIdAvecDetails",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_get_devis_client_list",
+      "method": "GET",
+      "url": "/api/CommandeClient/GetDevisClientList",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "devis",
+        "list",
+        "num",
+        "cde",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_cde_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/GetDevisClientList",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_test",
+      "method": "GET",
+      "url": "/api/CommandeClient/Test",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "test"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/Test",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_commande_client_getdep",
+      "method": "GET",
+      "url": "/api/CommandeClient/getdep",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "getdep"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/CommandeClient/getdep",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClient"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_conge_test",
+      "method": "GET",
+      "url": "/api/Conge/Test",
+      "intent": "GET",
+      "keywords": [
+        "conge",
+        "test"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Conge/Test",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "Conge"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_demande_conge_get_all",
+      "method": "GET",
+      "url": "/api/DemandeConge/GetAll",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/DemandeConge/GetAll",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeConge"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_demande_conge_get_all_employes",
+      "method": "GET",
+      "url": "/api/DemandeConge/GetAllEmployes",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge",
+        "employes"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/DemandeConge/GetAllEmployes",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeConge"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_demande_conge_get_demandeconge_multiple",
+      "method": "GET",
+      "url": "/api/DemandeConge/GetDemandecongeMultiple",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge",
+        "demandeconge",
+        "multiple",
+        "code",
+        "ddecong",
+        "societe"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "code_ddecong",
+        "societe"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/DemandeConge/GetDemandecongeMultiple",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeConge"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_demande_conge_types",
+      "method": "GET",
+      "url": "/api/DemandeConge/types",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge",
+        "types"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/DemandeConge/types",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeConge"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_affectations",
+      "method": "GET",
+      "url": "/api/Depenses/GetAffectations",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "affectations"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetAffectations",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_agences",
+      "method": "GET",
+      "url": "/api/Depenses/GetAgences",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "agences"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetAgences",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_annee_list",
+      "method": "GET",
+      "url": "/api/Depenses/GetAnneeList",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "annee",
+        "list"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetAnneeList",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_categories",
+      "method": "GET",
+      "url": "/api/Depenses/GetCategories",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "categories"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetCategories",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_compta_lignes",
+      "method": "GET",
+      "url": "/api/Depenses/GetComptaLignes",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "compta",
+        "lignes"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetComptaLignes",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_count_depense",
+      "method": "GET",
+      "url": "/api/Depenses/GetCountDepense",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "count",
+        "depense"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetCountDepense",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_depense",
+      "method": "GET",
+      "url": "/api/Depenses/GetDepense",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "depense"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetDepense",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_depots",
+      "method": "GET",
+      "url": "/api/Depenses/GetDepots",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "depots"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetDepots",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_employes",
+      "method": "GET",
+      "url": "/api/Depenses/GetEmployes",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "employes"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetEmployes",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_fiches_paie",
+      "method": "GET",
+      "url": "/api/Depenses/GetFichesPaie",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "fiches",
+        "paie"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetFichesPaie",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_modes",
+      "method": "GET",
+      "url": "/api/Depenses/GetModes",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "modes"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetModes",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_depenses_get_mois_paie",
+      "method": "GET",
+      "url": "/api/Depenses/GetMoisPaie",
+      "intent": "GET",
+      "keywords": [
+        "depenses",
+        "mois",
+        "paie"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Depenses/GetMoisPaie",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Depenses"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_fournisseur",
+      "method": "GET",
+      "url": "/api/Fournisseur",
+      "intent": "GET",
+      "keywords": [
+        "fournisseur"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Fournisseur",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "Fournisseur"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_fournisseur_get_familles_fournisseur",
+      "method": "GET",
+      "url": "/api/Fournisseur/GetFamillesFournisseur",
+      "intent": "GET",
+      "keywords": [
+        "fournisseur",
+        "familles"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Fournisseur/GetFamillesFournisseur",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "Fournisseur"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_fournisseur_get_fournisseur_by_code_code",
+      "method": "GET",
+      "url": "/api/Fournisseur/GetFournisseurByCode/{code}",
+      "intent": "GET",
+      "keywords": [
+        "fournisseur",
+        "code"
+      ],
+      "routeParameters": [
+        "code"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "code"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Fournisseur/GetFournisseurByCode/{code}",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "Fournisseur"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_lot_etats",
+      "method": "GET",
+      "url": "/api/Lot/etats",
+      "intent": "GET",
+      "keywords": [
+        "lot",
+        "etats",
+        "lots"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Lot/etats",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Lots"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_ordre_coupe_get_article",
+      "method": "GET",
+      "url": "/api/OrdreCoupe/GetArticle",
+      "intent": "GET",
+      "keywords": [
+        "ordre",
+        "coupe",
+        "article",
+        "code"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "code"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/OrdreCoupe/GetArticle",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "OrdreCoupe"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_ordre_coupe_get_order_coupe",
+      "method": "GET",
+      "url": "/api/OrdreCoupe/GetOrderCoupe",
+      "intent": "GET",
+      "keywords": [
+        "ordre",
+        "coupe",
+        "order",
+        "code"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "code"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/OrdreCoupe/GetOrderCoupe",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "OrdreCoupe"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_agences",
+      "method": "GET",
+      "url": "/api/Paiements/GetAgences",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "agences"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetAgences",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_all_clients",
+      "method": "GET",
+      "url": "/api/Paiements/GetAllClients",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "clients"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetAllClients",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_all_etats",
+      "method": "GET",
+      "url": "/api/Paiements/GetAllEtats",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "etats"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetAllEtats",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_all_frs",
+      "method": "GET",
+      "url": "/api/Paiements/GetAllFrs",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "frs"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetAllFrs",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_by_id_with_solde_client_codepaiement",
+      "method": "GET",
+      "url": "/api/Paiements/GetByIdWithSoldeClient/{codepaiement}",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "with",
+        "solde",
+        "client",
+        "codepaiement"
+      ],
+      "routeParameters": [
+        "codepaiement"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "codepaiement"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetByIdWithSoldeClient/{codepaiement}",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_client_by_id_code",
+      "method": "GET",
+      "url": "/api/Paiements/GetClientById/{code}",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "client",
+        "code"
+      ],
+      "routeParameters": [
+        "code"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "code"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetClientById/{code}",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_modes",
+      "method": "GET",
+      "url": "/api/Paiements/GetModes",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "modes",
+        "cltorfrsorall"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cltorfrsorall"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetModes",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_get_parametresf",
+      "method": "GET",
+      "url": "/api/Paiements/GetParametresf",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "parametresf"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/GetParametresf",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_paiements_codepaiement",
+      "method": "GET",
+      "url": "/api/Paiements/{codepaiement}",
+      "intent": "GET",
+      "keywords": [
+        "paiements",
+        "codepaiement"
+      ],
+      "routeParameters": [
+        "codepaiement"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "codepaiement"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Paiements/{codepaiement}",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "Paiements"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_reports_commande_client_report",
+      "method": "GET",
+      "url": "/api/Reports/commande_client-report",
+      "intent": "AGGREGATE",
+      "keywords": [
+        "reports",
+        "commande",
+        "client",
+        "report",
+        "num",
+        "cde",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "num_cde_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Reports/commande_client-report",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "Reports"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_reports_generate_test",
+      "method": "GET",
+      "url": "/api/Reports/generate-test",
+      "intent": "AGGREGATE",
+      "keywords": [
+        "reports",
+        "generate",
+        "test"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Reports/generate-test",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Reports"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_reports_generate_test",
+      "method": "GET",
+      "url": "/api/Reports/generateTest",
+      "intent": "AGGREGATE",
+      "keywords": [
+        "reports",
+        "generate",
+        "test",
+        "num",
+        "fact",
+        "est",
+        "frs",
+        "type",
+        "avec",
+        "prix",
+        "imp",
+        "affiche",
+        "entete"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "numFact",
+        "estFrs",
+        "type",
+        "avecPrix",
+        "typeImp",
+        "estAfficheEntete"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Reports/generateTest",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Reports"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stats_vente_stats_vente_par_article",
+      "method": "GET",
+      "url": "/api/StatsVente/StatsVenteParArticle",
+      "intent": "AGGREGATE",
+      "keywords": [
+        "stats",
+        "vente",
+        "par",
+        "article",
+        "date",
+        "debut",
+        "fin",
+        "commercial",
+        "category"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "DateDebut",
+        "DateFin",
+        "commercialCategory"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StatsVente/StatsVenteParArticle",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "StatsVente"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stock_depot_get_all_famille",
+      "method": "GET",
+      "url": "/api/StockDepot/GetAllFamille",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot",
+        "famille"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StockDepot/GetAllFamille",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Stock"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stock_depot_get_all_famille_p",
+      "method": "GET",
+      "url": "/api/StockDepot/GetAllFamilleP",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot",
+        "famille",
+        "p"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StockDepot/GetAllFamilleP",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Stock"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stock_depot_get_all_lot",
+      "method": "GET",
+      "url": "/api/StockDepot/GetAllLot",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot",
+        "lot"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StockDepot/GetAllLot",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Stock"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stock_depot_get_depot",
+      "method": "GET",
+      "url": "/api/StockDepot/GetDepot",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StockDepot/GetDepot",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Stock"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_stock_depot_test",
+      "method": "GET",
+      "url": "/api/StockDepot/Test",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot",
+        "test"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/StockDepot/Test",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "Stock"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_transfert_argent_get_count_transfert",
+      "method": "GET",
+      "url": "/api/TransfertArgent/GetCountTransfert",
+      "intent": "GET",
+      "keywords": [
+        "transfert",
+        "argent",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/TransfertArgent/GetCountTransfert",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "TransfertArgent"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_translation_get_all_to_front_language",
+      "method": "GET",
+      "url": "/api/Translation/GetAllToFront/{language}",
+      "intent": "GET",
+      "keywords": [
+        "translation",
+        "to",
+        "front",
+        "language"
+      ],
+      "routeParameters": [
+        "language"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "language"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Translation/GetAllToFront/{language}",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Translation"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_translation_get_all_to_front_language_item",
+      "method": "GET",
+      "url": "/api/Translation/GetAllToFront/{language}/{item}",
+      "intent": "GET",
+      "keywords": [
+        "translation",
+        "to",
+        "front",
+        "language",
+        "item"
+      ],
+      "routeParameters": [
+        "language",
+        "item"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "language",
+        "item"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Translation/GetAllToFront/{language}/{item}",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Translation"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_translation_get_translation_by_code_id",
+      "method": "GET",
+      "url": "/api/Translation/GetTranslationByCode/{id}",
+      "intent": "GET",
+      "keywords": [
+        "translation",
+        "code"
+      ],
+      "routeParameters": [
+        "id"
+      ],
+      "queryParameters": [],
+      "requiredParameters": [
+        "id"
+      ],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/Translation/GetTranslationByCode/{id}",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Translation"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_api_web_user_verifier_user",
+      "method": "GET",
+      "url": "/api/WebUser/VerifierUser",
+      "intent": "GET",
+      "keywords": [
+        "web",
+        "user",
+        "verifier",
+        "users"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /api/WebUser/VerifierUser",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "WebUsers"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_odata",
+      "method": "GET",
+      "url": "/odata",
+      "intent": "GET",
+      "keywords": [
+        "metadata"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Metadata"
+      ],
+      "operationId": "odata/"
+    },
+    {
+      "id": "webapi_get_odata_metadata",
+      "method": "GET",
+      "url": "/odata/$metadata",
+      "intent": "GET",
+      "keywords": [
+        "metadata"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/$metadata",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "Metadata"
+      ],
+      "operationId": "odata/$metadata"
+    },
+    {
+      "id": "webapi_get_odata_agence_bancaire_odata",
+      "method": "GET",
+      "url": "/odata/AgenceBancaireOdata",
+      "intent": "GET",
+      "keywords": [
+        "agence",
+        "bancaire"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/AgenceBancaireOdata",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "AgenceBancaireOdata"
+      ],
+      "operationId": "odata/AgenceBancaireOdata"
+    },
+    {
+      "id": "webapi_get_odata_agence_bancaire_odata_count",
+      "method": "GET",
+      "url": "/odata/AgenceBancaireOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "agence",
+        "bancaire",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/AgenceBancaireOdata/$count",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "AgenceBancaireOdata"
+      ],
+      "operationId": "odata/AgenceBancaireOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_article_odata",
+      "method": "GET",
+      "url": "/odata/ArticleOdata",
+      "intent": "GET",
+      "keywords": [
+        "article",
+        "cod",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/ArticleOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "ArticleOdata"
+      ],
+      "operationId": "odata/ArticleOdata"
+    },
+    {
+      "id": "webapi_get_odata_article_odata_count",
+      "method": "GET",
+      "url": "/odata/ArticleOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "article",
+        "count",
+        "cod",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/ArticleOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "ArticleOdata"
+      ],
+      "operationId": "odata/ArticleOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bl_client_filter_article_odata",
+      "method": "GET",
+      "url": "/odata/BlClientFilterArticleOdata",
+      "intent": "FILTER",
+      "keywords": [
+        "bl",
+        "client",
+        "filter",
+        "article",
+        "code",
+        "commande",
+        "cod",
+        "art",
+        "desg",
+        "reference",
+        "qte",
+        "cde",
+        "num",
+        "clt",
+        "pvht",
+        "tva"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id",
+        "code",
+        "Commande",
+        "cod_art",
+        "desg_art",
+        "reference",
+        "qte_cde",
+        "Num_bl_clt",
+        "pvht",
+        "tva",
+        "code_cde_article"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlClientFilterArticleOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClientFilterArticleOdata"
+      ],
+      "operationId": "odata/BlClientFilterArticleOdata"
+    },
+    {
+      "id": "webapi_get_odata_bl_client_filter_article_odata_count",
+      "method": "GET",
+      "url": "/odata/BlClientFilterArticleOdata/$count",
+      "intent": "FILTER",
+      "keywords": [
+        "bl",
+        "client",
+        "filter",
+        "article",
+        "count",
+        "code",
+        "commande",
+        "cod",
+        "art",
+        "desg",
+        "reference",
+        "qte",
+        "cde",
+        "num",
+        "clt",
+        "pvht"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "id",
+        "code",
+        "Commande",
+        "cod_art",
+        "desg_art",
+        "reference",
+        "qte_cde",
+        "Num_bl_clt",
+        "pvht",
+        "tva",
+        "code_cde_article"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlClientFilterArticleOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClientFilterArticleOdata"
+      ],
+      "operationId": "odata/BlClientFilterArticleOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bl_client_odata",
+      "method": "GET",
+      "url": "/odata/BlClientOdata",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlClientOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClientOdata"
+      ],
+      "operationId": "odata/BlClientOdata"
+    },
+    {
+      "id": "webapi_get_odata_bl_client_odata_count",
+      "method": "GET",
+      "url": "/odata/BlClientOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "client",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlClientOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "BlClientOdata"
+      ],
+      "operationId": "odata/BlClientOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bl_frs_article_odata",
+      "method": "GET",
+      "url": "/odata/BlFrsArticleOdata",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs",
+        "article"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlFrsArticleOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "BlFrsArticleOdata"
+      ],
+      "operationId": "odata/BlFrsArticleOdata"
+    },
+    {
+      "id": "webapi_get_odata_bl_frs_article_odata_count",
+      "method": "GET",
+      "url": "/odata/BlFrsArticleOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs",
+        "article",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlFrsArticleOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "BlFrsArticleOdata"
+      ],
+      "operationId": "odata/BlFrsArticleOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bl_frs_odata",
+      "method": "GET",
+      "url": "/odata/BlFrsOdata",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlFrsOdata",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "BlFrsOdata"
+      ],
+      "operationId": "odata/BlFrsOdata"
+    },
+    {
+      "id": "webapi_get_odata_bl_frs_odata_count",
+      "method": "GET",
+      "url": "/odata/BlFrsOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "bl",
+        "frs",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BlFrsOdata/$count",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "BlFrsOdata"
+      ],
+      "operationId": "odata/BlFrsOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bon_transfert_demande_odata",
+      "method": "GET",
+      "url": "/odata/BonTransfertDemandeOdata",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BonTransfertDemandeOdata",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemandeOdata"
+      ],
+      "operationId": "odata/BonTransfertDemandeOdata"
+    },
+    {
+      "id": "webapi_get_odata_bon_transfert_demande_odata_count",
+      "method": "GET",
+      "url": "/odata/BonTransfertDemandeOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "demande",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BonTransfertDemandeOdata/$count",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertDemandeOdata"
+      ],
+      "operationId": "odata/BonTransfertDemandeOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_bon_transfert_odata",
+      "method": "GET",
+      "url": "/odata/BonTransfertOdata",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BonTransfertOdata",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertOdata"
+      ],
+      "operationId": "odata/BonTransfertOdata"
+    },
+    {
+      "id": "webapi_get_odata_bon_transfert_odata_count",
+      "method": "GET",
+      "url": "/odata/BonTransfertOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "bon",
+        "transfert",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/BonTransfertOdata/$count",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "BonTransfertOdata"
+      ],
+      "operationId": "odata/BonTransfertOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_client_odata",
+      "method": "GET",
+      "url": "/odata/ClientOdata",
+      "intent": "GET",
+      "keywords": [
+        "client"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/ClientOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "ClientOdata"
+      ],
+      "operationId": "odata/ClientOdata"
+    },
+    {
+      "id": "webapi_get_odata_client_odata_count",
+      "method": "GET",
+      "url": "/odata/ClientOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "client",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/ClientOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "ClientOdata"
+      ],
+      "operationId": "odata/ClientOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_clients_odata_get_familles_client_odata",
+      "method": "GET",
+      "url": "/odata/ClientsOdata/GetFamillesClientOdata",
+      "intent": "GET",
+      "keywords": [
+        "clients",
+        "familles",
+        "client"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/ClientsOdata/GetFamillesClientOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "ClientOdata"
+      ],
+      "operationId": ""
+    },
+    {
+      "id": "webapi_get_odata_commande_article_odata",
+      "method": "GET",
+      "url": "/odata/CommandeArticleOdata",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "article",
+        "devis",
+        "code",
+        "art",
+        "designation",
+        "reference",
+        "num",
+        "cde",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Devis",
+        "Code_art",
+        "Designation",
+        "Reference",
+        "Num_cde_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeArticleOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeArticleOdata"
+      ],
+      "operationId": "odata/CommandeArticleOdata"
+    },
+    {
+      "id": "webapi_get_odata_commande_article_odata_count",
+      "method": "GET",
+      "url": "/odata/CommandeArticleOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "article",
+        "count",
+        "devis",
+        "code",
+        "art",
+        "designation",
+        "reference",
+        "num",
+        "cde",
+        "clt"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Devis",
+        "Code_art",
+        "Designation",
+        "Reference",
+        "Num_cde_clt"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeArticleOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeArticleOdata"
+      ],
+      "operationId": "odata/CommandeArticleOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_commande_client_articlet_odata",
+      "method": "GET",
+      "url": "/odata/CommandeClientArticletOdata",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "articlet"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeClientArticletOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClientArticletOdata"
+      ],
+      "operationId": "odata/CommandeClientArticletOdata"
+    },
+    {
+      "id": "webapi_get_odata_commande_client_articlet_odata_count",
+      "method": "GET",
+      "url": "/odata/CommandeClientArticletOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "articlet",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeClientArticletOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClientArticletOdata"
+      ],
+      "operationId": "odata/CommandeClientArticletOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_commande_client_odata",
+      "method": "GET",
+      "url": "/odata/CommandeClientOdata",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeClientOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClientOdata"
+      ],
+      "operationId": "odata/CommandeClientOdata"
+    },
+    {
+      "id": "webapi_get_odata_commande_client_odata_count",
+      "method": "GET",
+      "url": "/odata/CommandeClientOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "commande",
+        "client",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/CommandeClientOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "CommandeClientOdata"
+      ],
+      "operationId": "odata/CommandeClientOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_demande_conge_odata",
+      "method": "GET",
+      "url": "/odata/DemandeCongeOdata",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DemandeCongeOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeCongeOdata"
+      ],
+      "operationId": "odata/DemandeCongeOdata"
+    },
+    {
+      "id": "webapi_get_odata_demande_conge_odata_count",
+      "method": "GET",
+      "url": "/odata/DemandeCongeOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "demande",
+        "conge",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DemandeCongeOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "DemandeCongeOdata"
+      ],
+      "operationId": "odata/DemandeCongeOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_depense_odata",
+      "method": "GET",
+      "url": "/odata/DepenseOdata",
+      "intent": "GET",
+      "keywords": [
+        "depense"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DepenseOdata",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "DepenseOdata"
+      ],
+      "operationId": "odata/DepenseOdata"
+    },
+    {
+      "id": "webapi_get_odata_depense_odata_count",
+      "method": "GET",
+      "url": "/odata/DepenseOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "depense",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DepenseOdata/$count",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "DepenseOdata"
+      ],
+      "operationId": "odata/DepenseOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_details_article_odata",
+      "method": "GET",
+      "url": "/odata/DetailsArticleOdata",
+      "intent": "GET",
+      "keywords": [
+        "details",
+        "article",
+        "depot",
+        "demande",
+        "code",
+        "art",
+        "designation",
+        "reference"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "depot",
+        "Demande",
+        "Code_art",
+        "Designation",
+        "Reference"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DetailsArticleOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "DetailsArticleOdata"
+      ],
+      "operationId": "odata/DetailsArticleOdata"
+    },
+    {
+      "id": "webapi_get_odata_details_article_odata_count",
+      "method": "GET",
+      "url": "/odata/DetailsArticleOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "details",
+        "article",
+        "count",
+        "depot",
+        "demande",
+        "code",
+        "art",
+        "designation",
+        "reference"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "depot",
+        "Demande",
+        "Code_art",
+        "Designation",
+        "Reference"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/DetailsArticleOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "DetailsArticleOdata"
+      ],
+      "operationId": "odata/DetailsArticleOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_frs_odata",
+      "method": "GET",
+      "url": "/odata/FrsOdata",
+      "intent": "GET",
+      "keywords": [
+        "frs"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/FrsOdata",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "FrsOdata"
+      ],
+      "operationId": "odata/FrsOdata"
+    },
+    {
+      "id": "webapi_get_odata_frs_odata_count",
+      "method": "GET",
+      "url": "/odata/FrsOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "frs",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/FrsOdata/$count",
+      "examples": [],
+      "role": "achat",
+      "tags": [
+        "FrsOdata"
+      ],
+      "operationId": "odata/FrsOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_historiques_odata",
+      "method": "GET",
+      "url": "/odata/HistoriquesOdata",
+      "intent": "GET",
+      "keywords": [
+        "historiques"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/HistoriquesOdata",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "HistoriquesOdata"
+      ],
+      "operationId": "odata/HistoriquesOdata"
+    },
+    {
+      "id": "webapi_get_odata_historiques_odata_count",
+      "method": "GET",
+      "url": "/odata/HistoriquesOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "historiques",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/HistoriquesOdata/$count",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "HistoriquesOdata"
+      ],
+      "operationId": "odata/HistoriquesOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paie_avances_odata",
+      "method": "GET",
+      "url": "/odata/PaieAvancesOdata",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "avances",
+        "code",
+        "employe",
+        "acompteor",
+        "salaire",
+        "societe",
+        "mois",
+        "annee",
+        "chantier"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "CodeEmploye",
+        "AcompteorSalaire",
+        "Societe",
+        "Mois",
+        "Annee",
+        "Chantier"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieAvancesOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieAvancesOdata"
+      ],
+      "operationId": "odata/PaieAvancesOdata"
+    },
+    {
+      "id": "webapi_get_odata_paie_avances_odata_count",
+      "method": "GET",
+      "url": "/odata/PaieAvancesOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "avances",
+        "count",
+        "code",
+        "employe",
+        "acompteor",
+        "salaire",
+        "societe",
+        "mois",
+        "annee",
+        "chantier"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "CodeEmploye",
+        "AcompteorSalaire",
+        "Societe",
+        "Mois",
+        "Annee",
+        "Chantier"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieAvancesOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieAvancesOdata"
+      ],
+      "operationId": "odata/PaieAvancesOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paie_chantier_odata",
+      "method": "GET",
+      "url": "/odata/PaieChantierOdata",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "chantier"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieChantierOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieChantierOdata"
+      ],
+      "operationId": "odata/PaieChantierOdata"
+    },
+    {
+      "id": "webapi_get_odata_paie_chantier_odata_count",
+      "method": "GET",
+      "url": "/odata/PaieChantierOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "chantier",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieChantierOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieChantierOdata"
+      ],
+      "operationId": "odata/PaieChantierOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paie_employes_odata",
+      "method": "GET",
+      "url": "/odata/PaieEmployesOdata",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "employes",
+        "code",
+        "societe",
+        "cin",
+        "chantier"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Code",
+        "Societe",
+        "Cin",
+        "Chantier"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieEmployesOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieEmployesOdata"
+      ],
+      "operationId": "odata/PaieEmployesOdata"
+    },
+    {
+      "id": "webapi_get_odata_paie_employes_odata_count",
+      "method": "GET",
+      "url": "/odata/PaieEmployesOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "employes",
+        "count",
+        "code",
+        "societe",
+        "cin",
+        "chantier"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Code",
+        "Societe",
+        "Cin",
+        "Chantier"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieEmployesOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieEmployesOdata"
+      ],
+      "operationId": "odata/PaieEmployesOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paie_fiches_odata",
+      "method": "GET",
+      "url": "/odata/PaieFichesOdata",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "fiches",
+        "code",
+        "employe",
+        "societe",
+        "chantier",
+        "mois",
+        "annee"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "CodeEmploye",
+        "Societe",
+        "Chantier",
+        "Mois",
+        "Annee"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieFichesOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieFichesOdata"
+      ],
+      "operationId": "odata/PaieFichesOdata"
+    },
+    {
+      "id": "webapi_get_odata_paie_fiches_odata_count",
+      "method": "GET",
+      "url": "/odata/PaieFichesOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "fiches",
+        "count",
+        "code",
+        "employe",
+        "societe",
+        "chantier",
+        "mois",
+        "annee"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "CodeEmploye",
+        "Societe",
+        "Chantier",
+        "Mois",
+        "Annee"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaieFichesOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaieFichesOdata"
+      ],
+      "operationId": "odata/PaieFichesOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paie_pointage_odata",
+      "method": "GET",
+      "url": "/odata/PaiePointageOdata",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "pointage",
+        "code",
+        "societe",
+        "chantier",
+        "mois",
+        "annee"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Code",
+        "Societe",
+        "Chantier",
+        "Mois",
+        "Annee"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiePointageOdata",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaiePointageOdata"
+      ],
+      "operationId": "odata/PaiePointageOdata"
+    },
+    {
+      "id": "webapi_get_odata_paie_pointage_odata_count",
+      "method": "GET",
+      "url": "/odata/PaiePointageOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paie",
+        "pointage",
+        "count",
+        "code",
+        "societe",
+        "chantier",
+        "mois",
+        "annee"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "Code",
+        "Societe",
+        "Chantier",
+        "Mois",
+        "Annee"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiePointageOdata/$count",
+      "examples": [],
+      "role": "rh",
+      "tags": [
+        "PaiePointageOdata"
+      ],
+      "operationId": "odata/PaiePointageOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paiement_client_odata",
+      "method": "GET",
+      "url": "/odata/PaiementClientOdata",
+      "intent": "GET",
+      "keywords": [
+        "paiement",
+        "client"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiementClientOdata",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "PaiementClientOdata"
+      ],
+      "operationId": "odata/PaiementClientOdata"
+    },
+    {
+      "id": "webapi_get_odata_paiement_client_odata_count",
+      "method": "GET",
+      "url": "/odata/PaiementClientOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paiement",
+        "client",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiementClientOdata/$count",
+      "examples": [],
+      "role": "commercial",
+      "tags": [
+        "PaiementClientOdata"
+      ],
+      "operationId": "odata/PaiementClientOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_paiement_frs_odata",
+      "method": "GET",
+      "url": "/odata/PaiementFrsOdata",
+      "intent": "GET",
+      "keywords": [
+        "paiement",
+        "frs"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiementFrsOdata",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "PaiementFrsOdata"
+      ],
+      "operationId": "odata/PaiementFrsOdata"
+    },
+    {
+      "id": "webapi_get_odata_paiement_frs_odata_count",
+      "method": "GET",
+      "url": "/odata/PaiementFrsOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "paiement",
+        "frs",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/PaiementFrsOdata/$count",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "PaiementFrsOdata"
+      ],
+      "operationId": "odata/PaiementFrsOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_stock_depot_odata",
+      "method": "GET",
+      "url": "/odata/StockDepotOdata",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockDepotOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockDepotOdata"
+      ],
+      "operationId": "odata/StockDepotOdata"
+    },
+    {
+      "id": "webapi_get_odata_stock_depot_odata_count",
+      "method": "GET",
+      "url": "/odata/StockDepotOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "depot",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockDepotOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockDepotOdata"
+      ],
+      "operationId": "odata/StockDepotOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_stock_lot_odata",
+      "method": "GET",
+      "url": "/odata/StockLotOdata",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "lot",
+        "cod",
+        "dep",
+        "num",
+        "etat",
+        "art",
+        "desg"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_dep",
+        "num_lot",
+        "etat",
+        "cod_art",
+        "desg_art"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockLotOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockLotOdata"
+      ],
+      "operationId": "odata/StockLotOdata"
+    },
+    {
+      "id": "webapi_get_odata_stock_lot_odata_count",
+      "method": "GET",
+      "url": "/odata/StockLotOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "lot",
+        "count",
+        "cod",
+        "dep",
+        "num",
+        "etat",
+        "art",
+        "desg"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_dep",
+        "num_lot",
+        "etat",
+        "cod_art",
+        "desg_art"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockLotOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockLotOdata"
+      ],
+      "operationId": "odata/StockLotOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_stock_odata",
+      "method": "GET",
+      "url": "/odata/StockOdata",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "cod",
+        "dep",
+        "fam",
+        "famp",
+        "art",
+        "desg"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_dep",
+        "cod_fam",
+        "cod_famp",
+        "cod_art",
+        "desg_art"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockOdata",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockOdata"
+      ],
+      "operationId": "odata/StockOdata"
+    },
+    {
+      "id": "webapi_get_odata_stock_odata_count",
+      "method": "GET",
+      "url": "/odata/StockOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "stock",
+        "count",
+        "cod",
+        "dep",
+        "fam",
+        "famp",
+        "art",
+        "desg"
+      ],
+      "routeParameters": [],
+      "queryParameters": [
+        "cod_dep",
+        "cod_fam",
+        "cod_famp",
+        "cod_art",
+        "desg_art"
+      ],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/StockOdata/$count",
+      "examples": [],
+      "role": "stock",
+      "tags": [
+        "StockOdata"
+      ],
+      "operationId": "odata/StockOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_transfert_argent_odata",
+      "method": "GET",
+      "url": "/odata/TransfertArgentOdata",
+      "intent": "GET",
+      "keywords": [
+        "transfert",
+        "argent"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/TransfertArgentOdata",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "TransfertArgentOdata"
+      ],
+      "operationId": "odata/TransfertArgentOdata"
+    },
+    {
+      "id": "webapi_get_odata_transfert_argent_odata_count",
+      "method": "GET",
+      "url": "/odata/TransfertArgentOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "transfert",
+        "argent",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/TransfertArgentOdata/$count",
+      "examples": [],
+      "role": "finance",
+      "tags": [
+        "TransfertArgentOdata"
+      ],
+      "operationId": "odata/TransfertArgentOdata/$count"
+    },
+    {
+      "id": "webapi_get_odata_translation_odata",
+      "method": "GET",
+      "url": "/odata/TranslationOdata",
+      "intent": "GET",
+      "keywords": [
+        "translation"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/TranslationOdata",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "TranslationOdata"
+      ],
+      "operationId": "odata/TranslationOdata"
+    },
+    {
+      "id": "webapi_get_odata_translation_odata_count",
+      "method": "GET",
+      "url": "/odata/TranslationOdata/$count",
+      "intent": "GET",
+      "keywords": [
+        "translation",
+        "count"
+      ],
+      "routeParameters": [],
+      "queryParameters": [],
+      "requiredParameters": [],
+      "responseFormat": "Object",
+      "description": "Generated from Swagger: /odata/TranslationOdata/$count",
+      "examples": [],
+      "role": "general",
+      "tags": [
+        "TranslationOdata"
+      ],
+      "operationId": "odata/TranslationOdata/$count"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 param(
     [string]$PythonExe = "c:/Users/brahim/OneDrive/Bureau/example erp stage pfe/javaerp/.venv/Scripts/python.exe",
     [string]$LangGraphScript = "ai_assistant/langgraph_skeleton.py",
-    [string]$EndpointsJson = "C:/Users/brahim/OneDrive/Bureau/example erp stage pfe/aierpjava/test/src/main/resources/endpoints.json",
+    [string]$EndpointsJson = "C:/Users/brahim/OneDrive/Bureau/example erp stage pfe/javaerp/ai_assistant/data/endpoints.get.json",
     [string]$WebApiProjectDir = "C:/Users/brahim/OneDrive/Bureau/stage2026/web/Webservices_webclient/stagepfe26/WebApi",
     [int]$AssistantPort = 8000,
     [string]$RouterModel = "deepseek-coder:6.7b",
@@ -221,7 +221,8 @@ if (-not $preferredUrl) {
 }
 
 $env:ERP_ENDPOINTS_JSON = $EndpointsJson
-$env:ERP_ENDPOINT_SOURCE = "swagger"
+$env:ERP_ENDPOINT_SOURCE = "json"
+$env:ERP_LOAD_SWAGGER_ENDPOINTS = "0"
 $env:ERP_SWAGGER_JSON = (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "swagger_live.json")
 $env:ERP_WEBAPI_PROJECT_DIR = $WebApiProjectDir
 $env:ERP_API_BASE_URL = $preferredUrl
@@ -234,7 +235,9 @@ $env:OLLAMA_MODEL_ANSWER = $AnswerModel
 
 Write-Host "[stack] Session variables configured"
 Write-Host "[stack] ERP_API_BASE_URL=$env:ERP_API_BASE_URL"
+Write-Host "[stack] ERP_ENDPOINTS_JSON=$env:ERP_ENDPOINTS_JSON"
 Write-Host "[stack] ERP_ENDPOINT_SOURCE=$env:ERP_ENDPOINT_SOURCE"
+Write-Host "[stack] ERP_LOAD_SWAGGER_ENDPOINTS=$env:ERP_LOAD_SWAGGER_ENDPOINTS"
 Write-Host "[stack] ERP_SWAGGER_JSON=$env:ERP_SWAGGER_JSON"
 Write-Host "[stack] ERP_ASSISTANT_PORT=$env:ERP_ASSISTANT_PORT"
 Write-Host "[stack] OLLAMA_TIMEOUT_SECONDS=$env:OLLAMA_TIMEOUT_SECONDS"
