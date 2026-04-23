@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
-import numbers
 import os
 import re
 from functools import lru_cache
@@ -24,27 +22,6 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DISPLAY_RESULT_PATH = CACHE_DIR / "last_display_result.json"
 TRANSFORM_PLAN_PATH = CACHE_DIR / "last_transform_plan.json"
 DATASET_MAPPING_PATH = ROOT_DIR / "data" / "dataset_mapping_db.json"
-
-
-def _safe_json_dumps(obj: Any, **kwargs: Any) -> str:
-    """Serialize to JSON, converting NaN/Infinity to null to avoid invalid JSON output."""
-    def _clean(item: Any) -> Any:
-        if isinstance(item, numbers.Real) and not isinstance(item, bool):
-            value = float(item)
-            if math.isnan(value) or math.isinf(value):
-                return None
-            return item
-        if isinstance(item, str) and item in {"NaN", "Infinity", "-Infinity"}:
-            return None
-        if isinstance(item, dict):
-            return {k: _clean(v) for k, v in item.items()}
-        if isinstance(item, list):
-            return [_clean(v) for v in item]
-        if isinstance(item, tuple):
-            return [_clean(v) for v in item]
-        return item
-    kwargs.setdefault("allow_nan", False)
-    return json.dumps(_clean(obj), **kwargs)
 
 
 class AssistantState(TypedDict, total=False):
@@ -69,7 +46,7 @@ class AssistantState(TypedDict, total=False):
 
 # ---------- Utilities ----------
 def _load_endpoints() -> List[Dict[str, Any]]:
-    source_mode = os.getenv("ERP_ENDPOINT_SOURCE", "file").strip().lower()
+    source_mode = os.getenv("ERP_ENDPOINT_SOURCE", "swagger").strip().lower()
 
     if source_mode == "swagger":
         return _load_swagger_generated_endpoints()
@@ -78,12 +55,12 @@ def _load_endpoints() -> List[Dict[str, Any]]:
     if configured:
         path = Path(configured)
     else:
-        path = ROOT_DIR / "data" / "endpoints.get.json"
+        path = ROOT_DIR / "data" / "endpoints.sample.json"
 
     if not path.exists():
         return []
 
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
     configured_endpoints = payload.get("endpoints", [])
 
     # Optionally enrich with live WebApi routes from Swagger.
@@ -264,52 +241,48 @@ def _unique_strings(values: Any) -> List[str]:
     return out
 
 
-# TEMPORARILY COMMENTED: Domain inference function disabled to let DeepSeek Coder work independently
-# without pre-filtering. This function needs improvement and will be revisited after validating
-# DeepSeek Coder's routing accuracy with full endpoint access.
-# def _infer_domain_from_question(question: str) -> str:
-#     q = question.lower()
-#     # Priority anchors for common ambiguous phrases.
-#     if any(w in q for w in ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "créance", "creance"]):
-#         return "finance"
-#     if any(w in q for w in ["fournisseur", "fournisseurs", "achat"]):
-#         return "achat"
-#     if any(w in q for w in ["employe", "employés", "paie", "congé", "conge", "salaire"]):
-#         return "rh"
-#     if any(w in q for w in ["stock", "inventaire", "depot", "dépôt", "lot"]):
-#         return "stock"
-#
-#     domain_keywords = {
-#         "commercial": ["client", "clients", "commande", "commandes", "vente", "facture", "bl"],
-#         "stock": ["stock", "inventaire", "depot", "dépôt", "article", "articles", "lot"],
-#         "finance": ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "creance", "créance"],
-#         "rh": ["employe", "employés", "paie", "conge", "congé", "salaire"],
-#         "achat": ["fournisseur", "fournisseurs", "achat", "frs"],
-#     }
-#     best_domain = "general"
-#     best_score = 0
-#     for domain, words in domain_keywords.items():
-#         score = sum(1 for w in words if w in q)
-#         if score > best_score:
-#             best_score = score
-#             best_domain = domain
-#     return best_domain
+def _infer_domain_from_question(question: str) -> str:
+    q = question.lower()
+    # Priority anchors for common ambiguous phrases.
+    if any(w in q for w in ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "créance", "creance"]):
+        return "finance"
+    if any(w in q for w in ["fournisseur", "fournisseurs", "achat"]):
+        return "achat"
+    if any(w in q for w in ["employe", "employés", "paie", "congé", "conge", "salaire"]):
+        return "rh"
+    if any(w in q for w in ["stock", "inventaire", "depot", "dépôt", "lot"]):
+        return "stock"
+
+    domain_keywords = {
+        "commercial": ["client", "clients", "commande", "commandes", "vente", "facture", "bl"],
+        "stock": ["stock", "inventaire", "depot", "dépôt", "article", "articles", "lot"],
+        "finance": ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "creance", "créance"],
+        "rh": ["employe", "employés", "paie", "conge", "congé", "salaire"],
+        "achat": ["fournisseur", "fournisseurs", "achat", "frs"],
+    }
+    best_domain = "general"
+    best_score = 0
+    for domain, words in domain_keywords.items():
+        score = sum(1 for w in words if w in q)
+        if score > best_score:
+            best_score = score
+            best_domain = domain
+    return best_domain
 
 
-# TEMPORARILY COMMENTED: Path-based domain inference disabled (see above)
-# def _infer_domain_from_path(path: str) -> str:
-#     tokens = set(_split_path_tokens(path))
-#     if tokens.intersection({"client", "clients", "commande", "commandes", "blclient", "statsvente", "fact"}):
-#         return "commercial"
-#     if tokens.intersection({"stock", "depot", "lot", "article", "articles", "bonentree", "bontransfert"}):
-#         return "stock"
-#     if tokens.intersection({"paiement", "paiements", "depense", "depenses", "finance", "transfert"}):
-#         return "finance"
-#     if tokens.intersection({"demandeconge", "conge", "paie", "employe", "employes"}):
-#         return "rh"
-#     if tokens.intersection({"fournisseur", "fournisseurs", "blfrs", "frs"}):
-#         return "achat"
-#     return "general"
+def _infer_domain_from_path(path: str) -> str:
+    tokens = set(_split_path_tokens(path))
+    if tokens.intersection({"client", "clients", "commande", "commandes", "blclient", "statsvente", "fact"}):
+        return "commercial"
+    if tokens.intersection({"stock", "depot", "lot", "article", "articles", "bonentree", "bontransfert"}):
+        return "stock"
+    if tokens.intersection({"paiement", "paiements", "depense", "depenses", "finance", "transfert"}):
+        return "finance"
+    if tokens.intersection({"demandeconge", "conge", "paie", "employe", "employes"}):
+        return "rh"
+    if tokens.intersection({"fournisseur", "fournisseurs", "blfrs", "frs"}):
+        return "achat"
+    return "general"
 
 
 def _extract_simple_params(question: str) -> Dict[str, Any]:
@@ -765,8 +738,7 @@ def _normalize_request_analysis(
 def _extract_request_with_llama(question: str) -> tuple[Dict[str, Any], Optional[str]]:
     use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
     fallback_intent = "GET"
-    # TEMPORARILY: Use 'general' domain to allow DeepSeek Coder to see all endpoints without pre-filtering
-    fallback_domain = "general"  # Previously: _infer_domain_from_question(question)
+    fallback_domain = _infer_domain_from_question(question)
     fallback_requested_fields = _infer_requested_fields(question, _infer_dataset_table(question))
 
     if not use_ollama:
@@ -916,8 +888,7 @@ def _build_candidate_pool(
     endpoints: List[Dict[str, Any]],
     analysis: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
-    # domain = str(analysis.get("domain", "general") or "general").lower()
-    # TEMPORARILY DISABLED: Domain-based filtering to allow DeepSeek Coder full access to all endpoints
+    domain = str(analysis.get("domain", "general") or "general").lower()
     requested_fields = _normalize_requested_fields(analysis.get("requested_fields", []))
 
     candidates: List[Dict[str, Any]] = []
@@ -927,10 +898,9 @@ def _build_candidate_pool(
         if str(endpoint.get("method", "GET")).upper() != "GET":
             continue
 
-        # TEMPORARILY DISABLED: Role-based filtering
-        # endpoint_role = str(endpoint.get("role", "general") or "general").lower()
-        # if domain != "general" and endpoint_role not in {domain, "general"}:
-        #     continue
+        endpoint_role = str(endpoint.get("role", "general") or "general").lower()
+        if domain != "general" and endpoint_role not in {domain, "general"}:
+            continue
 
         candidates.append(endpoint)
 
@@ -1051,7 +1021,7 @@ def _persist_display_result(
         "answer": answer,
         "errors": errors,
     }
-    DISPLAY_RESULT_PATH.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    DISPLAY_RESULT_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return payload
 
 
@@ -1061,7 +1031,7 @@ def _persist_transform_plan(question: str, plan: Dict[str, Any]) -> Dict[str, An
         "question": question,
         "plan": plan,
     }
-    TRANSFORM_PLAN_PATH.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    TRANSFORM_PLAN_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return payload
 
 
@@ -1519,7 +1489,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
             "data": [],
         }
         path = CACHE_DIR / "last_api_result.json"
-        path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return {"api_result_path": str(path), "errors": errors}
 
     base_urls = _get_erp_api_base_urls()
@@ -1533,7 +1503,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
             "data": [],
         }
         path = CACHE_DIR / "last_api_result.json"
-        path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return {"api_result_path": str(path), "errors": errors}
 
     overrides = _load_endpoint_overrides()
@@ -1656,7 +1626,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
     }
 
     path = CACHE_DIR / "last_api_result.json"
-    path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return {"api_result_path": str(path), "errors": errors}
 
@@ -1845,7 +1815,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
     server_version = "ERPAssistantHTTP/1.0"
 
     def _send_json(self, payload: Dict[str, Any], status: int = HTTPStatus.OK) -> None:
-        body = _safe_json_dumps(payload, ensure_ascii=False).encode("utf-8")
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -1925,4 +1895,4 @@ if __name__ == "__main__":
         serve_http(args.host, args.port)
     else:
         output = run_once(args.question)
-        print(_safe_json_dumps(output, indent=2, ensure_ascii=False))
+        print(json.dumps(output, indent=2, ensure_ascii=False))

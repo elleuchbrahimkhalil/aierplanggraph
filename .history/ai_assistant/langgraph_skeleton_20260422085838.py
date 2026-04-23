@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
-import numbers
 import os
 import re
 from functools import lru_cache
@@ -24,27 +22,6 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DISPLAY_RESULT_PATH = CACHE_DIR / "last_display_result.json"
 TRANSFORM_PLAN_PATH = CACHE_DIR / "last_transform_plan.json"
 DATASET_MAPPING_PATH = ROOT_DIR / "data" / "dataset_mapping_db.json"
-
-
-def _safe_json_dumps(obj: Any, **kwargs: Any) -> str:
-    """Serialize to JSON, converting NaN/Infinity to null to avoid invalid JSON output."""
-    def _clean(item: Any) -> Any:
-        if isinstance(item, numbers.Real) and not isinstance(item, bool):
-            value = float(item)
-            if math.isnan(value) or math.isinf(value):
-                return None
-            return item
-        if isinstance(item, str) and item in {"NaN", "Infinity", "-Infinity"}:
-            return None
-        if isinstance(item, dict):
-            return {k: _clean(v) for k, v in item.items()}
-        if isinstance(item, list):
-            return [_clean(v) for v in item]
-        if isinstance(item, tuple):
-            return [_clean(v) for v in item]
-        return item
-    kwargs.setdefault("allow_nan", False)
-    return json.dumps(_clean(obj), **kwargs)
 
 
 class AssistantState(TypedDict, total=False):
@@ -1051,7 +1028,7 @@ def _persist_display_result(
         "answer": answer,
         "errors": errors,
     }
-    DISPLAY_RESULT_PATH.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    DISPLAY_RESULT_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return payload
 
 
@@ -1061,7 +1038,7 @@ def _persist_transform_plan(question: str, plan: Dict[str, Any]) -> Dict[str, An
         "question": question,
         "plan": plan,
     }
-    TRANSFORM_PLAN_PATH.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    TRANSFORM_PLAN_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return payload
 
 
@@ -1519,7 +1496,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
             "data": [],
         }
         path = CACHE_DIR / "last_api_result.json"
-        path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return {"api_result_path": str(path), "errors": errors}
 
     base_urls = _get_erp_api_base_urls()
@@ -1533,7 +1510,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
             "data": [],
         }
         path = CACHE_DIR / "last_api_result.json"
-        path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return {"api_result_path": str(path), "errors": errors}
 
     overrides = _load_endpoint_overrides()
@@ -1656,7 +1633,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
     }
 
     path = CACHE_DIR / "last_api_result.json"
-    path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return {"api_result_path": str(path), "errors": errors}
 
@@ -1845,7 +1822,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
     server_version = "ERPAssistantHTTP/1.0"
 
     def _send_json(self, payload: Dict[str, Any], status: int = HTTPStatus.OK) -> None:
-        body = _safe_json_dumps(payload, ensure_ascii=False).encode("utf-8")
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -1925,4 +1902,4 @@ if __name__ == "__main__":
         serve_http(args.host, args.port)
     else:
         output = run_once(args.question)
-        print(_safe_json_dumps(output, indent=2, ensure_ascii=False))
+        print(json.dumps(output, indent=2, ensure_ascii=False))

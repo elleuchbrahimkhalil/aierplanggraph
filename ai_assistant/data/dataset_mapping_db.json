@@ -1,0 +1,62 @@
+[
+  {
+    "table": "client",
+    "businessDomain": "Ventes/CRM",
+    "description": "Entité gérant l'identité et les données commerciales et financières des clients.",
+    "columns": [
+      { "name": "cod_clt", "type": "string", "isPrimaryKey": true, "isForeignKey": false, "description": "Identifiant unique du client.", "synonyms": ["code client", "id client", "matricule", "identifiant client", "numéro client"] },
+      { "name": "raison", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Raison sociale ou nom du client.", "synonyms": ["nom", "nom du client", "raison sociale", "entreprise", "nom de société", "qui est le client"] },
+      { "name": "tel", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Numéro de téléphone de contact.", "synonyms": ["téléphone", "numéro", "contact", "tel", "num"] },
+      { "name": "solde_reel", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Solde réel (dette existante du client envers la société). Très important pour le contrôle financier.", "synonyms": ["dette", "solde", "impayé", "crédit actuel", "ce qu'il doit", "combien il doit", "argent non payé", "balance"] },
+      { "name": "soldemax", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Plafond de crédit ou d'encours autorisé avant blocage du compte.", "synonyms": ["plafond", "limite de crédit", "solde max", "autorisation de crédit", "encours max"] },
+      { "name": "chiffre_d_affaire", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Chiffre d'affaire global réalisé avec ce client.", "synonyms": ["ca", "chiffre d'affaire", "total acheté", "volume de vente", "montant vendu", "historique d'achat"] },
+      { "name": "est_assujetti", "type": "int", "isPrimaryKey": false, "isForeignKey": false, "description": "Booléen (0/1) indiquant si le client est assujetti à la TVA.", "synonyms": ["assujetti", "paie la tva", "soumis à tva", "taxable"] },
+      { "name": "est_exonere", "type": "int", "isPrimaryKey": false, "isForeignKey": false, "description": "Booléen (0/1) indiquant si le client est exonéré de taxes.", "synonyms": ["exonéré", "zéro taxe", "sans taxe", "franchise de taxe", "exonération"] },
+      { "name": "cod_fam", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Code de la famille/catégorie de client.", "synonyms": ["famille", "catégorie", "type de client", "sous famille", "groupe"] },
+      { "name": "est_bloque", "type": "int", "isPrimaryKey": false, "isForeignKey": false, "description": "Indique si les livraisons/facturations au client sont bloquées (0=Non, 1=Oui).", "synonyms": ["bloqué", "compte suspendu", "liste noire", "interdit", "fermé"] }
+    ]
+  },
+  {
+    "table": "article",
+    "businessDomain": "Catalogue/Produits",
+    "description": "Référentiel des produits disponibles à la vente ou à l'achat.",
+    "columns": [
+      { "name": "cod_art", "type": "string", "isPrimaryKey": true, "isForeignKey": false, "description": "Code SKU unique identifier du produit.", "synonyms": ["code article", "référence", "code produit", "sku", "identifiant objet"] },
+      { "name": "desg_art", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Désignation (nom ou description longue) de l'article.", "synonyms": ["nom de l'article", "désignation", "description produit", "titre", "nom du produit"] },
+      { "name": "pvht", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Prix de vente unitaire HT de base.", "synonyms": ["prix ht", "prix hors taxe", "montant brut", "prix public", "prix de vente"] },
+      { "name": "pvuttc", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Prix de vente unitaire TTC final.", "synonyms": ["prix ttc", "prix final", "prix au client", "vendu à", "prix total", "prix net"] },
+      { "name": "pachatmoy", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Prix d'Achat Moyen Pondéré (PUMP). Essentiel pour calculer marges.", "synonyms": ["pump", "prix d'achat", "coût de revient", "coût", "prix moyen", "valeur en stock"] },
+      { "name": "qmin_art", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Seuil d'alerte ou stock minimum (stock de sécurité pour déclencher réapprovisionnement).", "synonyms": ["stock minimum", "seuil", "alerte stock", "quantité d'alerte", "stock sécurité", "minimum"] },
+      { "name": "cod_fam", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Identifiant de la famille à laquelle appartient l'article.", "synonyms": ["famille article", "catégorie produit", "rayon", "genre"] },
+      { "name": "est_vendable", "type": "int", "isPrimaryKey": false, "isForeignKey": false, "description": "1 si disponible pour la vente, 0 si usage interne exclusif.", "synonyms": ["vendable", "en vente", "mis en vente", "actif", "commercialisé"] }
+    ]
+  },
+  {
+    "table": "fact_clt",
+    "businessDomain": "Ventes/Facturation",
+    "description": "Enregistre les détails structurels de toutes les factures clients émises ou en attente.",
+    "columns": [
+      { "name": "num_fact_clt", "type": "string", "isPrimaryKey": true, "isForeignKey": false, "description": "Numéro d'identification principal (souvent au format chronologique légal).", "synonyms": ["numéro de facture", "id de la facture", "référence de la facture", "code facture", "quelle facture"] },
+      { "name": "cod_clt", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Référence vers le compte client.", "synonyms": ["client de la facture", "à qui est la facture", "référence client"] },
+      { "name": "dat_fact", "type": "DateTime", "isPrimaryKey": false, "isForeignKey": false, "description": "Date d'émission / d'exigibilité légale.", "synonyms": ["date de facture", "date de création", "facturé le", "quand facturé"] },
+      { "name": "totalht", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Montant Total Hors Taxe cumulé de la facture.", "synonyms": ["total hors taxe", "montant ht", "somme ht", "total avant taxes"] },
+      { "name": "net", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Montant Net TTC (incluant Timbre/Fodec).", "synonyms": ["total ttc", "montant net", "total à payer", "somme finale", "net"] },
+      { "name": "reste", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Ce qu'il reste à payer. Si fact_clt.reste est > 0, c'est une facture impayée.", "synonyms": ["non payé", "reste dû", "à régler", "solde facture", "impayée sur facture", "différence de paiement"] },
+      { "name": "etat_fact", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Statut qualitatif de la facture (validée, annulée, etc.)", "synonyms": ["statut", "état", "en attente", "validée ou non"] },
+      { "name": "est_compta", "type": "int", "isPrimaryKey": false, "isForeignKey": false, "description": "Vaut 1 si la facture a été transférée dans les registres comptables.", "synonyms": ["comptabilisé", "en compta", "passé dans la comptabilité", "journal comptable"] }
+    ]
+  },
+  {
+    "table": "mvts",
+    "businessDomain": "Stock/Traçabilité",
+    "description": "Table chronologique pure consignant tous les mouvements de matériels (entrées et sorties).",
+    "columns": [
+      { "name": "code", "type": "int", "isPrimaryKey": true, "isForeignKey": false, "description": "Code unique pour la ligne de mouvement.", "synonyms": ["code mouvement", "id du mouvement", "numéro de transaction"] },
+      { "name": "date", "type": "DateTime", "isPrimaryKey": false, "isForeignKey": false, "description": "Date d'effectivité de l'acte.", "synonyms": ["date d'opération", "fait le", "date du mouvement", "moment"] },
+      { "name": "article", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Référence de l'article impacté.", "synonyms": ["produit mouvementé", "article lié", "quel produit"] },
+      { "name": "qte", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Quantité en variation. (+) Positif pour une entrée et (-) Négatif pour une sortie.", "synonyms": ["quantité", "combien", "nombre", "volume bougé", "qté"] },
+      { "name": "libelle", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Description littérale de l'opération (Exemple : VENTE BL N°XXX).", "synonyms": ["motif", "type d'opération", "pourquoi", "raison du mouvement", "texte"] },
+      { "name": "code_dep", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Identifiant de l'entrepôt impacté par le mouvement.", "synonyms": ["dépôt", "magasin", "stock lié", "localisation", "entrepôt"] }
+    ]
+  }
+]

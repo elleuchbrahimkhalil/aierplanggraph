@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-04-23T08:36:24.290824+00:00",
+  "question": "afficher les ventes par article",
+  "endpoints": [
+    {
+      "id": "webapi_get_api_b2b_intermediate_get_all_articles",
+      "url": "/api/B2b_intermediate/GetAllArticles",
+      "method": "GET"
+    }
+  ],
+  "schemaHint": {
+    "table": "client",
+    "businessDomain": "Ventes/CRM",
+    "description": "Entité gérant l'identité et les données commerciales et financières des clients.",
+    "columns": [
+      {
+        "name": "cod_clt",
+        "type": "string",
+        "description": "Identifiant unique du client.",
+        "synonyms": [
+          "code client",
+          "id client",
+          "matricule",
+          "identifiant client",
+          "numéro client"
+        ]
+      },
+      {
+        "name": "raison",
+        "type": "string",
+        "description": "Raison sociale ou nom du client.",
+        "synonyms": [
+          "nom",
+          "nom du client",
+          "raison sociale",
+          "entreprise",
+          "nom de société"
+        ]
+      },
+      {
+        "name": "tel",
+        "type": "string",
+        "description": "Numéro de téléphone de contact.",
+        "synonyms": [
+          "téléphone",
+          "numéro",
+          "contact",
+          "tel",
+          "num"
+        ]
+      },
+      {
+        "name": "solde_reel",
+        "type": "decimal",
+        "description": "Solde réel (dette existante du client envers la société). Très important pour le contrôle financier.",
+        "synonyms": [
+          "dette",
+          "solde",
+          "impayé",
+          "crédit actuel",
+          "ce qu'il doit"
+        ]
+      },
+      {
+        "name": "soldemax",
+        "type": "decimal",
+        "description": "Plafond de crédit ou d'encours autorisé avant blocage du compte.",
+        "synonyms": [
+          "plafond",
+          "limite de crédit",
+          "solde max",
+          "autorisation de crédit",
+          "encours max"
+        ]
+      },
+      {
+        "name": "chiffre_d_affaire",
+        "type": "decimal",
+        "description": "Chiffre d'affaire global réalisé avec ce client.",
+        "synonyms": [
+          "ca",
+          "chiffre d'affaire",
+          "total acheté",
+          "volume de vente",
+          "montant vendu"
+        ]
+      },
+      {
+        "name": "est_assujetti",
+        "type": "int",
+        "description": "Booléen (0/1) indiquant si le client est assujetti à la TVA.",
+        "synonyms": [
+          "assujetti",
+          "paie la tva",
+          "soumis à tva",
+          "taxable"
+        ]
+      },
+      {
+        "name": "est_exonere",
+        "type": "int",
+        "description": "Booléen (0/1) indiquant si le client est exonéré de taxes.",
+        "synonyms": [
+          "exonéré",
+          "zéro taxe",
+          "sans taxe",
+          "franchise de taxe",
+          "exonération"
+        ]
+      }
+    ]
+  },
+  "extractedParams": {
+    "raison": [
+      " ventes par article"
+    ],
+    "est_assujetti": null,
+    "est_exonere": null,
+    "requested_fields": [
+      "chiffre_d_affaire",
+      "solde_reel"
+    ]
+  },
+  "display": {
+    "count": 0,
+    "by_endpoint": {},
+    "records": []
+  },
+  "answer": "Malheureusement, il n'y a pas suffisamment d'information pour afficher les ventes par article. La requête « webapi_get_api_b2b_intermediate_get_all_articles » est liée aux articles B2B et récupère la liste des articles sans fournir d'informations sur les ventes ou les chiffres d'affaires.\n\nPour obtenir les ventes par article, vous devrez probablement utiliser une autre requête qui spécifie les critères de recherche ou les filtres souhaités. Il est également possible que le tableau des ventes soit stocké dans une table distincte, ce qui nécessiterait une requête supplémentaire.\n\nIl n'y a pas suffisamment d'information pour afficher les détails sur les ventes par article à partir de la table « client » fournie.",
+  "errors": [
+    "Router Ollama error: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=300)",
+    "WebApi call failed for webapi_get_api_b2b_intermediate_get_all_articles: 401 Client Error: Unauthorized for url: http://localhost:5006/api/B2b_intermediate/GetAllArticles"
+  ]
+}

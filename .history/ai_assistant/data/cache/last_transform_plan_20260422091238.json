@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-04-22T08:12:39.085601+00:00",
+  "question": "affiche les ventes par article",
+  "plan": {
+    "steps": [
+      {
+        "op": "filter_rows",
+        "conditions": [
+          "onlyly",
+          "only",
+          "all"
+        ],
+        "values": []
+      },
+      {
+        "op": "select",
+        "columns": [
+          "chiffre_d_affaire",
+          "solde_reel",
+          "soldemax"
+        ]
+      },
+      {
+        "op": "limit",
+        "value": 20
+      }
+    ]
+  }
+}

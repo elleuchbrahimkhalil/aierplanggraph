@@ -112,6 +112,7 @@ $backendArgs = @(
     "-PythonExe", "`"$PythonExe`"",
     "-WebApiProjectDir", "`"$WebApiProjectDir`"",
     "-AssistantPort", $AssistantPort
+    "-Serve" # Indique à start_stack.ps1 de démarrer le serveur de l'assistant
 )
 if ($UseOllama) {
     $backendArgs += "-UseOllama"

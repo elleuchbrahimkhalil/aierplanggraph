@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-04-23T08:34:29.994532+00:00",
+  "question": "afficher les ventes par article",
+  "plan": {
+    "steps": [
+      {
+        "op": "limit",
+        "value": 20
+      }
+    ]
+  }
+}

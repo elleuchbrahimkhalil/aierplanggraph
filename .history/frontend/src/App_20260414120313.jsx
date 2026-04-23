@@ -70,7 +70,6 @@ export default function App() {
   const [rows, setRows] = useState([]);
   const [calledEndpoint, setCalledEndpoint] = useState('');
   const [assistantAnswer, setAssistantAnswer] = useState('');
-  const [extractedParams, setExtractedParams] = useState({});
 
   const summary = useMemo(() => {
     if (!rows.length) return 'Aucune donnée chargée.';
@@ -80,14 +79,12 @@ export default function App() {
   const columns = useMemo(() => collectColumns(rows), [rows]);
   const visibleRows = useMemo(() => rows.slice(0, 12), [rows]);
   const jsonPreview = useMemo(() => JSON.stringify(visibleRows, null, 2), [visibleRows]);
-  const extractedParamEntries = useMemo(() => Object.entries(extractedParams || {}), [extractedParams]);
 
   async function runAssistant(customAction) {
     setLoading(true);
     setError('');
     setRows([]);
     setAssistantAnswer('');
-    setExtractedParams({});
 
     try {
       const askedQuestion = customAction?.query || question;
@@ -125,9 +122,6 @@ export default function App() {
         : [];
       const filteredRecords = displayRecords.length ? displayRecords : (payload?.filtered_result?.records || []);
       const normalizedRows = normalizeAssistantRows(filteredRecords);
-      const resolvedExtractedParams = displayPayload && typeof displayPayload?.extractedParams === 'object'
-        ? displayPayload.extractedParams
-        : (payload && typeof payload?.extracted_params === 'object' ? payload.extracted_params : {});
       const assistantErrors = Array.isArray(payload?.errors) ? payload.errors : [];
       const visibleErrors = normalizedRows.length
         ? assistantErrors.filter((entry) => !entry.toLowerCase().includes('ollama error'))
@@ -138,7 +132,6 @@ export default function App() {
       );
       setAssistantAnswer(displayPayload?.answer || payload?.answer || '');
       setRows(normalizedRows);
-      setExtractedParams(resolvedExtractedParams);
 
       if (visibleErrors.length) {
         setError(visibleErrors.join(' | '));
@@ -200,21 +193,6 @@ export default function App() {
             <h2>État de l’appel</h2>
             <p>{summary}</p>
             <p className="mono">Endpoints: {calledEndpoint || '—'}</p>
-            <div className="params-box">
-              <p className="params-title">Paramètres extraits</p>
-              {extractedParamEntries.length ? (
-                <div className="params-grid">
-                  {extractedParamEntries.map(([key, value]) => (
-                    <div className="param-item" key={key}>
-                      <span className="param-key">{key}</span>
-                      <span className="param-value">{formatCellValue(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="params-empty">Aucun paramètre extrait.</p>
-              )}
-            </div>
             {assistantAnswer ? <p>{assistantAnswer}</p> : null}
             {error ? <p className="error">Erreur: {error}</p> : null}
           </article>

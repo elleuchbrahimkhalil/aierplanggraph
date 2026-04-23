@@ -3,22 +3,12 @@ param(
     [string]$WebApiProjectDir = "C:/Users/brahim/OneDrive/Bureau/stage2026/web/Webservices_webclient/stagepfe26/WebApi",
     [string]$FrontendDir = "frontend",
     [int]$AssistantPort = 8000,
-    [int]$AssistantMaxWaitSeconds = 150,
     [switch]$UseOllama = $true,
     [switch]$AutoPullModels = $true,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
-
-# Force UTF-8 console output to avoid mojibake (ex: VÃ©rification).
-try {
-    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-    $OutputEncoding = [Console]::OutputEncoding
-    chcp 65001 | Out-Null
-} catch {
-    # Non-blocking: continue with default encoding if console cannot switch.
-}
 
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendScript = Join-Path $rootDir "ai_assistant/start_stack.ps1"
@@ -58,46 +48,6 @@ function Wait-PortUp {
     return $null
 }
 
-function Test-AssistantHttpHealth {
-    param(
-        [string]$HostName,
-        [int]$Port,
-        [int]$TimeoutSeconds = 4
-    )
-
-    $url = "http://${HostName}:$Port/health"
-    try {
-        $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSeconds
-        if ($null -ne $resp -and $resp.status -eq "ok") {
-            return $true
-        }
-    } catch {
-        return $false
-    }
-    return $false
-}
-
-function Wait-AssistantUp {
-    param(
-        [string[]]$HostNames,
-        [int]$Port,
-        [int]$MaxSeconds = 150
-    )
-
-    $deadline = (Get-Date).AddSeconds($MaxSeconds)
-    while ((Get-Date) -lt $deadline) {
-        foreach ($h in $HostNames) {
-            if (Test-TcpPort -HostName $h -Port $Port) {
-                if (Test-AssistantHttpHealth -HostName $h -Port $Port -TimeoutSeconds 4) {
-                    return $h
-                }
-            }
-        }
-        Start-Sleep -Milliseconds 900
-    }
-    return $null
-}
-
 if (-not (Test-Path $backendScript)) {
     throw "Script backend introuvable: $backendScript"
 }
@@ -112,6 +62,7 @@ $backendArgs = @(
     "-PythonExe", "`"$PythonExe`"",
     "-WebApiProjectDir", "`"$WebApiProjectDir`"",
     "-AssistantPort", $AssistantPort
+    "-Serve" # Indique à start_stack.ps1 de démarrer le serveur de l'assistant
 )
 if ($UseOllama) {
     $backendArgs += "-UseOllama"
@@ -152,15 +103,8 @@ if (-not $backendReadyOn) {
 Write-Host "[all] WebApi actif sur ${backendReadyOn}:$expectedWebApiPort"
 
 Write-Host "[all] Vérification Assistant API sur 127.0.0.1:$expectedAssistantPort ..."
-$assistantReadyOn = Wait-AssistantUp -HostNames @("127.0.0.1", "localhost", "::1") -Port $expectedAssistantPort -MaxSeconds $AssistantMaxWaitSeconds
+$assistantReadyOn = Wait-PortUp -HostNames @("127.0.0.1", "localhost", "::1") -Port $expectedAssistantPort -MaxSeconds 45
 if (-not $assistantReadyOn) {
-    Write-Host "[all] Echec: Assistant API non prêt sur :$expectedAssistantPort (TCP/health)."
-    if ($backendProc -and -not $backendProc.HasExited) {
-        Write-Host "[all] Process backend actif (PID=$($backendProc.Id))."
-        Write-Host "[all] Conseil: vérifier si le serveur Python est lancé avec --serve et s'il bind sur 127.0.0.1:8000."
-    } elseif ($backendProc) {
-        Write-Host "[all] Process backend terminé prématurément (PID=$($backendProc.Id), ExitCode=$($backendProc.ExitCode))."
-    }
     throw "L'assistant LangGraph n'est pas joignable sur le port $expectedAssistantPort."
 }
 Write-Host "[all] Assistant API actif sur ${assistantReadyOn}:$expectedAssistantPort"

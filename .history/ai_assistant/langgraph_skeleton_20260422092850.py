@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import numbers
 import os
 import re
 from functools import lru_cache
@@ -29,21 +28,13 @@ DATASET_MAPPING_PATH = ROOT_DIR / "data" / "dataset_mapping_db.json"
 def _safe_json_dumps(obj: Any, **kwargs: Any) -> str:
     """Serialize to JSON, converting NaN/Infinity to null to avoid invalid JSON output."""
     def _clean(item: Any) -> Any:
-        if isinstance(item, numbers.Real) and not isinstance(item, bool):
-            value = float(item)
-            if math.isnan(value) or math.isinf(value):
-                return None
-            return item
-        if isinstance(item, str) and item in {"NaN", "Infinity", "-Infinity"}:
+        if isinstance(item, float) and (math.isnan(item) or math.isinf(item)):
             return None
         if isinstance(item, dict):
             return {k: _clean(v) for k, v in item.items()}
         if isinstance(item, list):
             return [_clean(v) for v in item]
-        if isinstance(item, tuple):
-            return [_clean(v) for v in item]
         return item
-    kwargs.setdefault("allow_nan", False)
     return json.dumps(_clean(obj), **kwargs)
 
 
