@@ -7,5 +7,8 @@
     "start:all:dry": "powershell.exe -ExecutionPolicy Bypass -File ./start_all.ps1 -DryRun",
     "start:backend": "powershell.exe -ExecutionPolicy Bypass -File ./ai_assistant/start_stack.ps1",
     "start:frontend": "npm --prefix ./frontend run dev"
+  },
+  "dependencies": {
+    "uuid": "^14.0.0"
   }
 }

@@ -4,6 +4,17 @@ param(
     [string]$FrontendDir = "frontend",
     [int]$AssistantPort = 8000,
     [int]$AssistantMaxWaitSeconds = 150,
+    [string]$ExtractorModel = "llama3.2",
+    [string]$RouterModel = "deepseek-coder:6.7b",
+    [string]$TransformerModel = "deepseek-coder:6.7b",
+    [string]$AnswerModel = "llama3.2",
+    [int]$RouterCandidateLimit = 24,
+    [int]$RouterColumnLimit = 24,
+    [string]$ApiAuthUrl = "",
+    [string]$ApiUsername = "",
+    [string]$ApiPassword = "",
+    [string]$ApiSociete = "",
+    [switch]$GenerateTextAnswer,
     [switch]$UseOllama = $true,
     [switch]$AutoPullModels = $true,
     [switch]$DryRun
@@ -16,7 +27,8 @@ try {
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     $OutputEncoding = [Console]::OutputEncoding
     chcp 65001 | Out-Null
-} catch {
+}
+catch {
     # Non-blocking: continue with default encoding if console cannot switch.
 }
 
@@ -25,6 +37,7 @@ $backendScript = Join-Path $rootDir "ai_assistant/start_stack.ps1"
 $frontendNpm = Join-Path $rootDir $FrontendDir
 $expectedWebApiPort = 5006
 $expectedAssistantPort = $AssistantPort
+$expectedFrontendPorts = @(5173)
 
 function Test-TcpPort {
     param([string]$HostName, [int]$Port)
@@ -39,7 +52,8 @@ function Test-TcpPort {
         $client.EndConnect($iar)
         $client.Close()
         return $true
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -51,6 +65,25 @@ function Wait-PortUp {
         foreach ($h in $HostNames) {
             if (Test-TcpPort -HostName $h -Port $Port) {
                 return $h
+            }
+        }
+        Start-Sleep -Milliseconds 900
+    }
+    return $null
+}
+
+function Wait-AnyPortUp {
+    param([string[]]$HostNames, [int[]]$Ports, [int]$MaxSeconds = 120)
+    $deadline = (Get-Date).AddSeconds($MaxSeconds)
+    while ((Get-Date) -lt $deadline) {
+        foreach ($port in $Ports) {
+            foreach ($h in $HostNames) {
+                if (Test-TcpPort -HostName $h -Port $port) {
+                    return @{
+                        Host = $h
+                        Port = $port
+                    }
+                }
             }
         }
         Start-Sleep -Milliseconds 900
@@ -71,7 +104,8 @@ function Test-AssistantHttpHealth {
         if ($null -ne $resp -and $resp.status -eq "ok") {
             return $true
         }
-    } catch {
+    }
+    catch {
         return $false
     }
     return $false
@@ -111,24 +145,54 @@ $backendArgs = @(
     "-File", "`"$backendScript`"",
     "-PythonExe", "`"$PythonExe`"",
     "-WebApiProjectDir", "`"$WebApiProjectDir`"",
-    "-AssistantPort", $AssistantPort
+    "-AssistantPort", $AssistantPort,
+    "-ExtractorModel", "`"$ExtractorModel`"",
+    "-RouterModel", "`"$RouterModel`"",
+    "-TransformerModel", "`"$TransformerModel`"",
+    "-AnswerModel", "`"$AnswerModel`"",
+    "-RouterCandidateLimit", $RouterCandidateLimit,
+    "-RouterColumnLimit", $RouterColumnLimit
 )
+if (-not [string]::IsNullOrWhiteSpace($ApiAuthUrl)) {
+    $backendArgs += @("-ApiAuthUrl", "`"$ApiAuthUrl`"")
+}
+if (-not [string]::IsNullOrWhiteSpace($ApiUsername)) {
+    $backendArgs += @("-ApiUsername", "`"$ApiUsername`"")
+}
+if (-not [string]::IsNullOrWhiteSpace($ApiPassword)) {
+    $backendArgs += @("-ApiPassword", "`"$ApiPassword`"")
+}
+if (-not [string]::IsNullOrWhiteSpace($ApiSociete)) {
+    $backendArgs += @("-ApiSociete", "`"$ApiSociete`"")
+}
 if ($UseOllama) {
     $backendArgs += "-UseOllama"
 }
 if ($AutoPullModels) {
     $backendArgs += "-AutoPullModels"
 }
+if ($GenerateTextAnswer) {
+    $backendArgs += "-GenerateTextAnswer"
+}
 
 $frontendArgs = @(
-    "run",
-    "dev"
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-Command", "Set-Location -LiteralPath '$frontendNpm'; & npm.cmd run dev"
 )
 
 Write-Host "[all] Start plan:"
-Write-Host "[all] Backend: powershell.exe $($backendArgs -join ' ')"
-Write-Host "[all] Frontend: npm $($frontendArgs -join ' ') (cwd=$frontendNpm)"
-Write-Host "[all] Ollama answer model default: llama3.2:latest"
+$displayBackendArgs = @()
+for ($i = 0; $i -lt $backendArgs.Count; $i++) {
+    $displayBackendArgs += $backendArgs[$i]
+    if ($backendArgs[$i] -eq "-ApiPassword" -and ($i + 1) -lt $backendArgs.Count) {
+        $displayBackendArgs += '"***"'
+        $i++
+    }
+}
+Write-Host "[all] Backend: powershell.exe $($displayBackendArgs -join ' ')"
+Write-Host "[all] Frontend: powershell.exe $($frontendArgs -join ' ')"
+Write-Host "[all] Models: extractor=$ExtractorModel router=$RouterModel transform=$TransformerModel answer=$AnswerModel"
 
 if ($DryRun) {
     Write-Host "[all] DryRun active - nothing started."
@@ -144,7 +208,8 @@ if (-not $backendReadyOn) {
     Write-Host "[all] Echec: WebApi n'est pas joignable sur localhost:$expectedWebApiPort"
     if ($backendProc -and -not $backendProc.HasExited) {
         Write-Host "[all] Process backend actif (PID=$($backendProc.Id)) mais port indisponible."
-    } elseif ($backendProc) {
+    }
+    elseif ($backendProc) {
         Write-Host "[all] Process backend terminé prématurément (PID=$($backendProc.Id), ExitCode=$($backendProc.ExitCode))."
     }
     throw "Le backend ne s'est pas initialisé correctement."
@@ -158,7 +223,8 @@ if (-not $assistantReadyOn) {
     if ($backendProc -and -not $backendProc.HasExited) {
         Write-Host "[all] Process backend actif (PID=$($backendProc.Id))."
         Write-Host "[all] Conseil: vérifier si le serveur Python est lancé avec --serve et s'il bind sur 127.0.0.1:8000."
-    } elseif ($backendProc) {
+    }
+    elseif ($backendProc) {
         Write-Host "[all] Process backend terminé prématurément (PID=$($backendProc.Id), ExitCode=$($backendProc.ExitCode))."
     }
     throw "L'assistant LangGraph n'est pas joignable sur le port $expectedAssistantPort."
@@ -166,10 +232,25 @@ if (-not $assistantReadyOn) {
 Write-Host "[all] Assistant API actif sur ${assistantReadyOn}:$expectedAssistantPort"
 
 Write-Host "[all] Démarrage frontend React..."
-Start-Process -FilePath "npm" -ArgumentList $frontendArgs -WorkingDirectory $frontendNpm -WindowStyle Minimized | Out-Null
+$frontendProc = Start-Process -FilePath "powershell.exe" -ArgumentList $frontendArgs -WorkingDirectory $rootDir -WindowStyle Normal -PassThru
+
+Write-Host "[all] Vérification Frontend sur les ports possibles: $($expectedFrontendPorts -join ', ') ..."
+$frontendReady = Wait-AnyPortUp -HostNames @("localhost", "127.0.0.1", "::1") -Ports $expectedFrontendPorts -MaxSeconds 45
+if (-not $frontendReady) {
+    Write-Host "[all] Echec: Frontend non joignable sur les ports attendus: $($expectedFrontendPorts -join ', ')"
+    if ($frontendProc -and -not $frontendProc.HasExited) {
+        Write-Host "[all] Process frontend actif (PID=$($frontendProc.Id)) mais port indisponible."
+        Write-Host "[all] Conseil: vérifier la fenêtre frontend (npm.cmd run dev) pour les erreurs npm/vite."
+    }
+    elseif ($frontendProc) {
+        Write-Host "[all] Process frontend terminé prématurément (PID=$($frontendProc.Id), ExitCode=$($frontendProc.ExitCode))."
+    }
+    throw "Le frontend Vite ne s'est pas lancé correctement."
+}
+Write-Host "[all] Frontend actif sur $($frontendReady.Host):$($frontendReady.Port)"
 
 Write-Host "[all] Stack lancé."
-Write-Host "[all] Frontend: http://localhost:5173"
+Write-Host "[all] Frontend: http://$($frontendReady.Host):$($frontendReady.Port)"
 Write-Host "[all] WebApi: attendu sur http://localhost:5006"
 Write-Host "[all] Assistant API: http://127.0.0.1:$expectedAssistantPort"
 Write-Host "[all] Ollama: http://localhost:11434"

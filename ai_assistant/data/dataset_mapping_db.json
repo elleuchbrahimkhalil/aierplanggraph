@@ -58,5 +58,31 @@
       { "name": "libelle", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Description littérale de l'opération (Exemple : VENTE BL N°XXX).", "synonyms": ["motif", "type d'opération", "pourquoi", "raison du mouvement", "texte"] },
       { "name": "code_dep", "type": "string", "isPrimaryKey": false, "isForeignKey": true, "description": "Identifiant de l'entrepôt impacté par le mouvement.", "synonyms": ["dépôt", "magasin", "stock lié", "localisation", "entrepôt"] }
     ]
+  },
+  {
+    "table": "fournisseur",
+    "businessDomain": "Achats",
+    "description": "Gestion des fournisseurs, soldes et informations de contact.",
+    "columns": [
+      { "name": "cod_frs", "type": "string", "isPrimaryKey": true, "isForeignKey": false, "description": "Code ou identifiant unique du fournisseur.", "synonyms": ["code fournisseur", "id fournisseur", "matricule fournisseur"] },
+      { "name": "raison", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Nom ou raison sociale du fournisseur.", "synonyms": ["nom fournisseur", "société", "entreprise"] },
+      { "name": "tel", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Téléphone du fournisseur.", "synonyms": ["téléphone", "contact", "numéro de tel"] },
+      { "name": "solde_reel", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Solde réel (ce qui est dû au fournisseur).", "synonyms": ["solde fournisseur", "dette fournisseur", "montant dû", "à payer"] },
+      { "name": "chiffre_d_affaire", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Volume des achats réalisés chez ce fournisseur.", "synonyms": ["achats", "volume d'achat", "total acheté"] }
+    ]
+  },
+  {
+    "table": "vendeur",
+    "businessDomain": "Ressources Humaines",
+    "description": "Base de données des employés, vendeurs et commerciaux.",
+    "columns": [
+      { "name": "code", "type": "string", "isPrimaryKey": true, "isForeignKey": false, "description": "Code de l'employé.", "synonyms": ["matricule employé", "code employé", "id employé"] },
+      { "name": "Nom", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Nom de famille de l'employé.", "synonyms": ["nom de famille", "nom de l'employé"] },
+      { "name": "Prenom", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Prénom de l'employé.", "synonyms": ["prénom de l'employé"] },
+      { "name": "Telephone", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Téléphone de contact.", "synonyms": ["téléphone", "tel employé", "mobile"] },
+      { "name": "salaire_brut", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Salaire brut mensuel.", "synonyms": ["salaire brut", "rémunération brute", "paye brute"] },
+      { "name": "salairenet", "type": "decimal", "isPrimaryKey": false, "isForeignKey": false, "description": "Salaire net après retenues.", "synonyms": ["salaire net", "rémunération nette", "paye nette"] },
+      { "name": "chantier", "type": "string", "isPrimaryKey": false, "isForeignKey": false, "description": "Chantier ou affectation actuelle.", "synonyms": ["affectation", "lieu de travail", "projet"] }
+    ]
   }
 ]

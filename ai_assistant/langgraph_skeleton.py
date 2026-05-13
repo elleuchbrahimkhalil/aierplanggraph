@@ -6,16 +6,26 @@ import math
 import numbers
 import os
 import re
+import base64
+import io
 from functools import lru_cache
+import threading
 from http import HTTPStatus
-from urllib.parse import quote, urlencode
+from urllib.parse import urlencode
+from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
 
 import requests
+
+try:
+    from . import column_router
+except ImportError:
+    import column_router
 from langgraph.graph import END, START, StateGraph
+from langgraph.checkpoint.memory import MemorySaver
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -24,6 +34,145 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DISPLAY_RESULT_PATH = CACHE_DIR / "last_display_result.json"
 TRANSFORM_PLAN_PATH = CACHE_DIR / "last_transform_plan.json"
 DATASET_MAPPING_PATH = ROOT_DIR / "data" / "dataset_mapping_db.json"
+ROUTING_CATALOG_PATH = ROOT_DIR / "data" / "routing_catalog.txt"
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            key = key.strip()
+            if not key or key in os.environ:
+                continue
+            os.environ[key] = value.strip().strip("\"\'")
+    except OSError:
+        return
+
+
+_load_env_file(ROOT_DIR / ".env")
+_load_env_file(ROOT_DIR / ".env.auth")
+
+
+def _is_jwt(value: str) -> bool:
+    return value.count(".") == 2 and len(value) > 20
+
+
+def _decode_jwt_exp(token: str) -> Optional[int]:
+    try:
+        payload = token.split(".")[1]
+        pad = "=" * ((4 - len(payload) % 4) % 4)
+        data = base64.urlsafe_b64decode((payload + pad).encode("utf-8"))
+        obj = json.loads(data.decode("utf-8"))
+        exp = obj.get("exp")
+        return int(exp) if exp is not None else None
+    except (ValueError, IndexError, json.JSONDecodeError):
+        return None
+
+
+def _is_token_expired(token: str, skew_seconds: int = 60) -> bool:
+    exp = _decode_jwt_exp(token)
+    if exp is None:
+        return False
+    return exp <= int(datetime.now(UTC).timestamp()) + skew_seconds
+
+
+def _find_token_in_payload(payload: Any) -> Optional[str]:
+    if isinstance(payload, dict):
+        for key in ["token", "access_token", "jwt", "bearer"]:
+            value = payload.get(key)
+            if isinstance(value, str) and _is_jwt(value):
+                return value
+        for value in payload.values():
+            found = _find_token_in_payload(value)
+            if found:
+                return found
+    elif isinstance(payload, list):
+        for item in payload:
+            found = _find_token_in_payload(item)
+            if found:
+                return found
+    elif isinstance(payload, str) and _is_jwt(payload):
+        return payload
+    return None
+
+
+def _request_bearer_token(base_urls: List[str], errors: List[str]) -> Optional[str]:
+    auth_url = os.getenv("ERP_API_AUTH_URL", "").strip()
+    if not auth_url and base_urls:
+        auth_url = f"{base_urls[0].rstrip('/')}/api/WebUser"
+    if not auth_url:
+        errors.append("ERP_API_AUTH_URL is not set.")
+        return None
+
+    payload_json = os.getenv("ERP_API_AUTH_PAYLOAD_JSON", "").strip()
+    if payload_json:
+        try:
+            payload = json.loads(payload_json)
+        except json.JSONDecodeError:
+            errors.append("ERP_API_AUTH_PAYLOAD_JSON is invalid JSON.")
+            return None
+    else:
+        username = os.getenv("ERP_API_USERNAME", "").strip()
+        password = os.getenv("ERP_API_PASSWORD", "").strip()
+        societe = os.getenv("ERP_API_SOCIETE", "").strip()
+        if not username or not password:
+            errors.append("ERP_API_USERNAME/ERP_API_PASSWORD are not set.")
+            return None
+        payload = {"username": username, "password": password}
+        if societe:
+            payload["societe"] = societe
+
+    try:
+        response = requests.post(auth_url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json() if response.content else {}
+        token = _find_token_in_payload(data)
+        if not token:
+            errors.append("Auth response did not include a token.")
+            return None
+        os.environ["ERP_API_BEARER_TOKEN"] = token
+        return token
+    except requests.RequestException as exc:
+        status = None
+        body_preview = None
+        try:
+            resp = getattr(exc, "response", None)
+            if resp is not None:
+                status = resp.status_code
+                text = (resp.text or "").strip()
+                if text:
+                    body_preview = text[:800]
+        except Exception:
+            status = None
+            body_preview = None
+
+        if status is not None:
+            if body_preview:
+                if status >= 500 and "Unable to connect to any of the specified MySQL hosts" in body_preview:
+                    errors.append(
+                        f"Auth request failed because MySQL is unreachable (WebApi DB down). HTTP {status} on {auth_url}: {body_preview}"
+                    )
+                else:
+                    errors.append(f"Auth request failed: HTTP {status} on {auth_url}: {body_preview}")
+            else:
+                errors.append(f"Auth request failed: HTTP {status} on {auth_url}: {exc}")
+        else:
+            errors.append(f"Auth request failed: {exc}")
+        return None
+
+
+def _ensure_bearer_token(base_urls: List[str], errors: List[str]) -> Optional[str]:
+    token = os.getenv("ERP_API_BEARER_TOKEN", "").strip()
+    if token and not _is_token_expired(token):
+        return token
+    return _request_bearer_token(base_urls, errors)
 
 
 def _safe_json_dumps(obj: Any, **kwargs: Any) -> str:
@@ -47,33 +196,50 @@ def _safe_json_dumps(obj: Any, **kwargs: Any) -> str:
     return json.dumps(_clean(obj), **kwargs)
 
 
+def _is_model_only_mode() -> bool:
+    """Disable heuristic fallbacks to evaluate model-only behavior."""
+    # Par défaut activé pour ce mode 'clean'
+    return os.getenv("ERP_MODEL_ONLY_MODE", "1") == "1"
+
+
 class AssistantState(TypedDict, total=False):
+    # Input
     question: str
-    intent: str
-    domain: str
+    history: List[Dict[str, str]]  # Historique des échanges
+
+    # Model request understanding
     request_analysis: Dict[str, Any]
+    extracted_params: Dict[str, Any]
+
+    # Endpoint routing
     endpoint_candidates: List[Dict[str, Any]]
     selected_endpoints: List[Dict[str, Any]]
     selected_endpoint: Optional[Dict[str, Any]]
-    extracted_params: Dict[str, Any]
-    transform_plan: Dict[str, Any]
+
+    # WebApi execution
     api_result_path: str
+
+    # Model/data transformation
+    transform_plan: Dict[str, Any]
+    filtered_result: Dict[str, Any]
+
+    # Answer/display persistence
     display_result_path: str
     display_result: Dict[str, Any]
-    filtered_result: Dict[str, Any]
-    schema_hint: Dict[str, Any]
     answer: str
+
+    # Runtime status
     confidence: float
     errors: List[str]
 
 
 # ---------- Utilities ----------
+
 def _load_endpoints() -> List[Dict[str, Any]]:
-    source_mode = os.getenv("ERP_ENDPOINT_SOURCE", "file").strip().lower()
-
-    if source_mode == "swagger":
-        return _load_swagger_generated_endpoints()
-
+    """
+    Charge UNIQUEMENT les endpoints depuis le fichier JSON configurÃ©.
+    Suppression de la logique Swagger et de la fusion.
+    """
     configured = os.getenv("ERP_ENDPOINTS_JSON", "").strip()
     if configured:
         path = Path(configured)
@@ -83,156 +249,52 @@ def _load_endpoints() -> List[Dict[str, Any]]:
     if not path.exists():
         return []
 
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
-    configured_endpoints = payload.get("endpoints", [])
-
-    # Optionally enrich with live WebApi routes from Swagger.
-    load_swagger = os.getenv("ERP_LOAD_SWAGGER_ENDPOINTS", "1") == "1"
-    if not load_swagger:
-        return configured_endpoints
-
-    extra = _load_swagger_generated_endpoints()
-    if not extra:
-        return configured_endpoints
-
-    existing_ids = {str(ep.get("id", "")) for ep in configured_endpoints}
-    merged = configured_endpoints.copy()
-    for ep in extra:
-        if ep["id"] not in existing_ids:
-            merged.append(ep)
-    return merged
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        return payload.get("endpoints", []) if isinstance(payload, dict) else []
+    except (OSError, json.JSONDecodeError):
+        return []
 
 
-def _path_to_generated_id(path: str, method: str) -> str:
-    tokens = [t for t in re.split(r"[^a-zA-Z0-9]+", path.lower()) if t]
-    return "webapi_" + method.lower() + "_" + "_".join(tokens)
-
-
-def _path_to_keywords(path: str) -> List[str]:
-    expanded = re.sub(r"([a-z])([A-Z])", r"\1 \2", path)
-    tokens = [t for t in re.split(r"[^a-zA-Z0-9]+", expanded.lower()) if t]
-    stop = {"api", "odata", "get", "all", "by", "id", "v1", "swagger"}
-    uniq: List[str] = []
-    for t in tokens:
-        if t in stop:
-            continue
-        if t not in uniq:
-            uniq.append(t)
-    return uniq[:8]
-
-
-def _load_swagger_payload() -> Dict[str, Any]:
-    base_urls = _get_erp_api_base_urls()
-    for base_url in base_urls:
+def _load_routing_catalog_text(candidates: List[Dict[str, Any]]) -> str:
+    # Charger les instructions du fichier si disponible, mais NE PAS retourner immÃ©diatement
+    compact_lines = []
+    if os.getenv("ERP_INCLUDE_STATIC_ROUTING_CATALOG", "0") == "1" and ROUTING_CATALOG_PATH.exists():
         try:
-            response = requests.get(f"{base_url}/swagger/v1/swagger.json", timeout=20)
-            response.raise_for_status()
-            payload = response.json()
-            if isinstance(payload, dict):
-                return payload
-        except requests.RequestException:
+            static_instr = ROUTING_CATALOG_PATH.read_text(encoding="utf-8")
+            if static_instr.strip():
+                compact_lines.append("STATIC ROUTING NOTES")
+                compact_lines.append(static_instr.strip())
+                compact_lines.append("") # Add a blank line for separation
+        except OSError:
+            pass
+
+    for endpoint in candidates:
+        if not isinstance(endpoint, dict):
             continue
-
-    local_swagger = os.getenv("ERP_SWAGGER_JSON", "").strip()
-    if local_swagger:
-        fallback_path = Path(local_swagger)
-    else:
-        fallback_path = ROOT_DIR / "swagger_live.json"
-
-    if fallback_path.exists():
-        payload = json.loads(fallback_path.read_text(encoding="utf-8-sig"))
-        if isinstance(payload, dict):
-            return payload
-
-    return {}
-
-
-def _load_swagger_generated_endpoints() -> List[Dict[str, Any]]:
-    generated: List[Dict[str, Any]] = []
-    swagger_payload = _load_swagger_payload()
-    swagger_paths = swagger_payload.get("paths", {})
-    if not isinstance(swagger_paths, dict) or not swagger_paths:
-        return generated
-
-    for path, methods in swagger_paths.items():
-        if not isinstance(methods, dict):
+        if str(endpoint.get("method", "GET")).upper() != "GET":
             continue
-
-        for method_name, operation in methods.items():
-            method = str(method_name).upper()
-            if method != "GET":
-                continue
-
-            operation = operation if isinstance(operation, dict) else {}
-            tags = [str(tag) for tag in operation.get("tags", []) if tag]
-            summary = str(operation.get("summary", ""))
-            description = str(operation.get("description", ""))
-            operation_id = str(operation.get("operationId", ""))
-            parameters = operation.get("parameters", [])
-            query_parameters = [
-                str(param.get("name"))
-                for param in parameters
-                if isinstance(param, dict) and param.get("in") == "query" and param.get("name")
-            ]
-            route_parameters = [
-                str(param.get("name"))
-                for param in parameters
-                if isinstance(param, dict) and param.get("in") == "path" and param.get("name")
-            ]
-
-            keywords = _path_to_keywords(
-                " ".join(
-                    [
-                        path,
-                        summary,
-                        description,
-                        operation_id,
-                        " ".join(tags),
-                        " ".join(query_parameters),
-                    ]
-                )
+        column_limit = int(os.getenv("ERP_ROUTER_COLUMN_LIMIT", "24"))
+        columns = _endpoint_columns(endpoint, column_limit)
+        columns_only = os.getenv("ERP_ROUTER_COLUMNS_ONLY", "1") == "1"
+        if columns_only:
+            compact_lines.append(
+                f"- {endpoint.get('id')} | columns=[{', '.join(columns) or '-'}]"
             )
-            role = _infer_domain_from_path(" ".join([path, summary, description, operation_id, " ".join(tags)]))
-
-            generated.append(
-                {
-                    "id": _path_to_generated_id(path, method),
-                    "method": method,
-                    "url": path,
-                    "intent": "AGGREGATE" if _contains_any(path + " " + summary + " " + description, ["stat", "report", "vente", "chiffre", "dashboard"]) else "GET",
-                    "keywords": keywords,
-                    "routeParameters": route_parameters or re.findall(r"\{([^{}]+)\}", path),
-                    "queryParameters": query_parameters,
-                    "requiredParameters": route_parameters or re.findall(r"\{([^{}]+)\}", path),
-                    "responseFormat": "Object",
-                    "description": description or summary or f"Generated from Swagger: {path}",
-                    "examples": [],
-                    "role": role,
-                    "tags": tags,
-                }
+        else:
+            examples_str = "" # SupprimÃ© pour rÃ©duire le contexte et Ã©viter les timeouts Ollama
+            compact_lines.append(
+                f"- {endpoint.get('id')} | GET {endpoint.get('url', '')} | role={endpoint.get('role', 'general')} | route=[{', '.join(_unique_strings(endpoint.get('routeParameters', []))) or '-'}] | query=[{', '.join(_unique_strings(endpoint.get('queryParameters', []))) or '-'}] | columns=[{', '.join(columns) or '-'}] | desc={_truncate_text(endpoint.get('description', ''), 160)}{examples_str}"
             )
-
-    return generated
-
-
-def _load_endpoint_overrides() -> Dict[str, str]:
-    configured = os.getenv("ERP_ENDPOINT_OVERRIDES_JSON", "").strip()
-    if configured:
-        path = Path(configured)
-    else:
-        path = ROOT_DIR / "data" / "endpoint_overrides.json"
-
-    if not path.exists():
-        return {}
-
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, dict):
-        return {str(k): str(v) for k, v in payload.items()}
-    return {}
+    return "\n".join(compact_lines).strip() + "\n"
 
 
 @lru_cache(maxsize=1)
 def _load_dataset_mapping_db() -> List[Dict[str, Any]]:
+    """
+    Charge le fichier dataset_mapping_db.json pour fournir un contexte sÃ©mantique
+    au modÃ¨le, sans filtrer les endpoints (laissant le modÃ¨le dÃ©cider).
+    """
     if not DATASET_MAPPING_PATH.exists():
         return []
 
@@ -248,9 +310,66 @@ def _tokenize(text: str) -> List[str]:
     return re.findall(r"[a-zA-Z0-9_]+", text.lower())
 
 
-def _contains_any(text: str, terms: List[str]) -> bool:
-    lowered = text.lower()
-    return any(term in lowered for term in terms)
+def _score_mapping_table(table: Dict[str, Any], question_tokens: set[str]) -> int:
+    """Score a mapping table by lexical overlap with the question.
+
+    This is intentionally simple and deterministic: it helps avoid giving the LLM
+    a huge mapping context (which reduces precision).
+    """
+    if not isinstance(table, dict) or not question_tokens:
+        return 0
+
+    parts: List[str] = [
+        str(table.get("table", "")),
+        str(table.get("businessDomain", "")),
+        str(table.get("description", "")),
+    ]
+
+    for col in (table.get("columns", []) or []):
+        if not isinstance(col, dict):
+            continue
+        parts.append(str(col.get("name", "")))
+        parts.extend([str(s) for s in (col.get("synonyms", []) or [])])
+
+    text = " ".join(parts).lower()
+    score = 0
+    for tok in question_tokens:
+        if tok and tok in text:
+            score += 1
+
+    # Prefer direct column-name hits.
+    column_names = {
+        str(c.get("name", "")).lower()
+        for c in (table.get("columns", []) or [])
+        if isinstance(c, dict) and c.get("name")
+    }
+    score += 2 * len(column_names.intersection(question_tokens))
+    return score
+
+
+def _pick_relevant_mapping_tables(
+    mapping_db: List[Dict[str, Any]],
+    question: str,
+    max_tables: int,
+) -> List[Dict[str, Any]]:
+    if not mapping_db:
+        return []
+
+    tokens = set(_tokenize(question))
+    decorated: List[tuple[int, int, Dict[str, Any]]] = []
+    for idx, table in enumerate(mapping_db):
+        if not isinstance(table, dict):
+            continue
+        decorated.append((_score_mapping_table(table, tokens), idx, table))
+
+    decorated.sort(key=lambda item: (-item[0], item[1]))
+    picked = [item[2] for item in decorated[: max(0, max_tables)]]
+
+    # If everything scores 0 (no overlap), fall back to the first N to keep behavior stable.
+    if picked and all(_score_mapping_table(t, tokens) == 0 for t in picked):
+        return [t for t in mapping_db[: max(0, max_tables)] if isinstance(t, dict)]
+    return picked
+
 
 
 def _unique_strings(values: Any) -> List[str]:
@@ -264,302 +383,57 @@ def _unique_strings(values: Any) -> List[str]:
     return out
 
 
-# TEMPORARILY COMMENTED: Domain inference function disabled to let DeepSeek Coder work independently
-# without pre-filtering. This function needs improvement and will be revisited after validating
-# DeepSeek Coder's routing accuracy with full endpoint access.
-# def _infer_domain_from_question(question: str) -> str:
-#     q = question.lower()
-#     # Priority anchors for common ambiguous phrases.
-#     if any(w in q for w in ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "créance", "creance"]):
-#         return "finance"
-#     if any(w in q for w in ["fournisseur", "fournisseurs", "achat"]):
-#         return "achat"
-#     if any(w in q for w in ["employe", "employés", "paie", "congé", "conge", "salaire"]):
-#         return "rh"
-#     if any(w in q for w in ["stock", "inventaire", "depot", "dépôt", "lot"]):
-#         return "stock"
-#
-#     domain_keywords = {
-#         "commercial": ["client", "clients", "commande", "commandes", "vente", "facture", "bl"],
-#         "stock": ["stock", "inventaire", "depot", "dépôt", "article", "articles", "lot"],
-#         "finance": ["paiement", "paiements", "depense", "dépense", "transfert", "solde", "creance", "créance"],
-#         "rh": ["employe", "employés", "paie", "conge", "congé", "salaire"],
-#         "achat": ["fournisseur", "fournisseurs", "achat", "frs"],
-#     }
-#     best_domain = "general"
-#     best_score = 0
-#     for domain, words in domain_keywords.items():
-#         score = sum(1 for w in words if w in q)
-#         if score > best_score:
-#             best_score = score
-#             best_domain = domain
-#     return best_domain
+def _endpoint_columns(endpoint: Dict[str, Any], limit: Optional[int] = None) -> List[str]:
+    columns = _unique_strings(endpoint.get("columns", []))
+    if limit is None:
+        return columns
+    return columns[: max(0, limit)]
 
 
-# TEMPORARILY COMMENTED: Path-based domain inference disabled (see above)
-# def _infer_domain_from_path(path: str) -> str:
-#     tokens = set(_split_path_tokens(path))
-#     if tokens.intersection({"client", "clients", "commande", "commandes", "blclient", "statsvente", "fact"}):
-#         return "commercial"
-#     if tokens.intersection({"stock", "depot", "lot", "article", "articles", "bonentree", "bontransfert"}):
-#         return "stock"
-#     if tokens.intersection({"paiement", "paiements", "depense", "depenses", "finance", "transfert"}):
-#         return "finance"
-#     if tokens.intersection({"demandeconge", "conge", "paie", "employe", "employes"}):
-#         return "rh"
-#     if tokens.intersection({"fournisseur", "fournisseurs", "blfrs", "frs"}):
-#         return "achat"
-#     return "general"
 
-
-def _extract_simple_params(question: str) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-
-    id_match = re.search(r"\b(?:id|client|commande|article|employe)\s*(\d+)\b", question, re.IGNORECASE)
-    if id_match:
-        out["id"] = int(id_match.group(1))
-
-    date_match = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", question)
-    if date_match:
-        out["date"] = date_match.group(1)
-
-    return out
-
-
-def _extract_requested_fields(question: str) -> List[str]:
-    q = question.lower()
-    mapping = {
-        "email": ["email", "e-mail", "mail", "courriel"],
-        "telephone": ["telephone", "téléphone", "tel", "mobile", "gsm"],
-        "nom": ["nom", "name"],
-        "code": ["code", "reference", "référence", "ref"],
-        "adresse": ["adresse", "address"],
-        "ville": ["ville", "city"],
-    }
-
-    requested: List[str] = []
-    for canonical, aliases in mapping.items():
-        if any(alias in q for alias in aliases):
-            requested.append(canonical)
-
-    return requested
-
-
-def _normalize_text_tokens(value: Any) -> set[str]:
-    if value is None:
-        return set()
-    return set(_tokenize(str(value)))
-
-
-def _infer_dataset_table(question: str, selected_endpoints: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
-    mapping_db = _load_dataset_mapping_db()
-    if not mapping_db:
-        return None
-
-    q_tokens = _normalize_text_tokens(question)
-    endpoint_text = ""
-    if selected_endpoints:
-        endpoint_text = " ".join(
-            " ".join(
-                [
-                    str(ep.get("id", "")),
-                    str(ep.get("url", "")),
-                    str(ep.get("description", "")),
-                    " ".join(str(tag) for tag in ep.get("tags", [])),
-                ]
-            )
-            for ep in selected_endpoints
-        ).lower()
-
-    best_table: Optional[Dict[str, Any]] = None
-    best_score = 0
-
-    for table in mapping_db:
-        if not isinstance(table, dict):
-            continue
-
-        table_tokens = _normalize_text_tokens(table.get("table"))
-        table_tokens.update(_normalize_text_tokens(table.get("businessDomain")))
-        table_tokens.update(_normalize_text_tokens(table.get("description")))
-
-        column_tokens: set[str] = set()
-        for column in table.get("columns", []):
-            if not isinstance(column, dict):
-                continue
-            column_tokens.update(_normalize_text_tokens(column.get("name")))
-            column_tokens.update(_normalize_text_tokens(column.get("description")))
-            for synonym in column.get("synonyms", []):
-                column_tokens.update(_normalize_text_tokens(synonym))
-
-        score = len(q_tokens.intersection(table_tokens)) * 4
-        score += len(q_tokens.intersection(column_tokens)) * 2
-
-        if endpoint_text:
-            score += len(table_tokens.intersection(set(_tokenize(endpoint_text))))
-
-        if score > best_score:
-            best_score = score
-            best_table = table
-
-    return best_table
-
-
-def _build_schema_hint(table: Optional[Dict[str, Any]], max_columns: int = 8) -> Dict[str, Any]:
-    if not table:
-        return {}
-
-    columns: List[Dict[str, Any]] = []
-    for column in table.get("columns", [])[:max_columns]:
-        if not isinstance(column, dict):
-            continue
-        columns.append(
-            {
-                "name": column.get("name"),
-                "type": column.get("type"),
-                "description": column.get("description"),
-                "synonyms": list(column.get("synonyms", []))[:5],
-            }
+def _build_mapping_context(
+    question: str,
+    max_tables: int = 4,
+    max_columns: int = 6,
+) -> List[Dict[str, Any]]:
+    # Default to curated mapping DB; endpoint-derived mapping is noisy and often
+    # decreases extraction precision when many endpoints share similar columns.
+    use_endpoints = os.getenv("ERP_MAPPING_FROM_ENDPOINTS", "0") == "1"
+    if use_endpoints:
+        endpoints = _load_endpoints()
+        endpoint_limit = int(os.getenv("ERP_MAPPING_ENDPOINT_LIMIT", str(max_tables)))
+        column_limit = int(os.getenv("ERP_MAPPING_COLUMN_LIMIT", str(max_columns)))
+        return column_router.build_mapping_context_from_endpoints(
+            endpoints,
+            max_endpoints=endpoint_limit,
+            max_columns=column_limit,
         )
 
-    return {
-        "table": table.get("table"),
-        "businessDomain": table.get("businessDomain"),
-        "description": table.get("description"),
-        "columns": columns,
-    }
-
-
-def _score_column_match(question: str, column: Dict[str, Any]) -> int:
-    q = question.lower()
-    column_name = str(column.get("name", "")).lower()
-    synonyms = [str(s).lower() for s in column.get("synonyms", [])]
-    description = str(column.get("description", "")).lower()
-
-    score = 0
-    if column_name and column_name in q:
-        score += 10
-
-    for synonym in synonyms:
-        synonym_tokens = _tokenize(synonym)
-        if synonym and synonym in q:
-            score += 8 + len(synonym_tokens)
-        elif synonym_tokens and all(token in q for token in synonym_tokens):
-            score += 6 + len(synonym_tokens)
-
-    if "code client" in q:
-        if column_name == "cod_clt" or any("code client" in synonym for synonym in synonyms):
-            score += 20
-        elif "code" in description or "code" in column_name:
-            score -= 4
-
-    if "seulement" in q or "uniquement" in q:
-        if score > 0:
-            score += 2
-
-    return score
-
-
-def _resolve_requested_fields_with_schema(
-    question: str,
-    requested_fields: List[str],
-    table: Optional[Dict[str, Any]],
-) -> List[str]:
-    normalized_requested = _unique_strings(requested_fields)
-    if not table:
-        return normalized_requested
-
-    explicit_columns: List[tuple[int, str]] = []
-    for column in table.get("columns", []):
-        if not isinstance(column, dict):
+    mapping_db = _load_dataset_mapping_db()
+    context: List[Dict[str, Any]] = []
+    selected_tables = _pick_relevant_mapping_tables(mapping_db, question=question, max_tables=max_tables)
+    for table in selected_tables:
+        if not isinstance(table, dict):
             continue
-        column_name = str(column.get("name", "")).lower()
-        if not column_name:
-            continue
-        score = _score_column_match(question, column)
-        if score > 0:
-            explicit_columns.append((score, column_name))
-
-    explicit_columns.sort(key=lambda item: (-item[0], item[1]))
-    strong_matches = [name for score, name in explicit_columns if score >= 12]
-    if strong_matches:
-        return _unique_strings(strong_matches)
-
-    return normalized_requested
-
-
-def _infer_requested_fields(question: str, table: Optional[Dict[str, Any]] = None) -> List[str]:
-    requested = _extract_requested_fields(question)
-    if not table:
-        return requested
-
-    q = question.lower()
-    for column in table.get("columns", []):
-        if not isinstance(column, dict):
-            continue
-
-        column_name = str(column.get("name", "")).lower()
-        synonyms = [str(s).lower() for s in column.get("synonyms", [])]
-        description = str(column.get("description", "")).lower()
-
-        if column_name and column_name not in requested:
-            if column_name in q or any(s in q for s in synonyms) or any(word in description for word in ["mail", "nom", "téléphone", "telephone", "code"] if word in q):
-                requested.append(column_name)
-
-    return _resolve_requested_fields_with_schema(question, requested, table)
-
-
-def _project_record_fields(record: Any, requested_fields: List[str]) -> Any:
-    if not requested_fields or not isinstance(record, dict):
-        return record
-
-    selected: Dict[str, Any] = {}
-    aliases = {
-        "email": ["email", "mail", "courriel"],
-        "telephone": ["telephone", "tel", "mobile", "gsm", "phone"],
-        "nom": ["nom", "name", "intitule", "libelle"],
-        "code": ["code", "reference", "ref", "id"],
-        "adresse": ["adresse", "address", "addr"],
-        "ville": ["ville", "city"],
-    }
-
-    for key, value in record.items():
-        lowered_key = str(key).lower()
-        for requested in requested_fields:
-            if any(alias in lowered_key for alias in aliases.get(requested, [requested])):
-                selected[key] = value
-                break
-
-    return selected if selected else record
-
-
-def _project_record_with_schema(record: Any, requested_fields: List[str], table: Optional[Dict[str, Any]]) -> Any:
-    if not isinstance(record, dict) or not table:
-        return _project_record_fields(record, requested_fields)
-
-    selected: Dict[str, Any] = {}
-    normalized_requested = {str(field).lower() for field in requested_fields}
-
-    for key, value in record.items():
-        lowered_key = str(key).lower()
-        if lowered_key in normalized_requested:
-            selected[key] = value
-            continue
-
-        for column in table.get("columns", []):
+        columns: List[Dict[str, Any]] = []
+        for column in table.get("columns", [])[:max_columns]:
             if not isinstance(column, dict):
                 continue
-            column_name = str(column.get("name", "")).lower()
-            if lowered_key == column_name and (not normalized_requested or column_name in normalized_requested):
-                selected[key] = value
-                break
-            if any(str(s).lower() == lowered_key or str(s).lower() in lowered_key for s in column.get("synonyms", [])):
-                if not normalized_requested or column_name in normalized_requested or any(s in normalized_requested for s in [column_name]):
-                    selected[key] = value
-                    break
-
-    if selected:
-        return selected
-    return _project_record_fields(record, requested_fields)
+            columns.append(
+                {
+                    "name": column.get("name"),
+                    "description": column.get("description"),
+                    "synonyms": list(column.get("synonyms", []))[:6],
+                }
+            )
+        context.append(
+            {
+                "table": table.get("table"),
+                "description": table.get("description"),
+                "columns": columns,
+            }
+        )
+    return context
 
 
 def _is_supported_business_endpoint(endpoint: Dict[str, Any]) -> bool:
@@ -573,92 +447,18 @@ def _is_supported_business_endpoint(endpoint: Dict[str, Any]) -> bool:
     endpoint_text = " ".join([url, endpoint_id, description, tags])
 
     blocked_terms = [
-        "swagger",
-        "openapi",
-        "health",
-        "generate-test",
-        "generatetest",
-        "/test",
-        "testendpoint",
-        "debug",
-        "token",
-        "login",
-        "signin",
-        "auth",
+        "swagger", "openapi", "health", "generate-test", "testendpoint", 
+        "debug", "token", "login", "signin", "auth"
     ]
-    if _contains_any(endpoint_text, blocked_terms):
+    if any(term in endpoint_text for term in blocked_terms):
         return False
 
-    if "/api/reports/" in url and not _contains_any(endpoint_text, ["vente", "commande", "client", "fact", "report"]):
-        return False
-
-    business_allow_terms = [
-        "getall",
-        "list",
-        "all",
-        "odata",
-        "client",
-        "commande",
-        "vente",
-        "stock",
-        "paiement",
-        "fournisseur",
-        "fact",
-        "article",
-        "report",
-        "stats",
-    ]
-    return _contains_any(endpoint_text, business_allow_terms)
-
-
-def _determine_endpoint_limit(question: str, intent: str) -> int:
-    q = question.lower()
-    multi_markers = [
-        " et ",
-        " avec ",
-        " ainsi que ",
-        " compare ",
-        " comparaison ",
-        " resume ",
-        " résumé ",
-        " tableau de bord ",
-        " dashboard ",
-        " situation ",
-        " synthese ",
-        " synthèse ",
-    ]
-    if intent == "AGGREGATE":
-        return 3
-    if any(marker in f" {q} " for marker in multi_markers):
-        return 3
-    return 1
-
-
-def _normalize_requested_fields(value: Any) -> List[str]:
-    if not isinstance(value, list):
-        return []
-    out: List[str] = []
-    for item in value:
-        if item is None:
-            continue
-        token = str(item).strip().lower()
-        if token and token not in out:
-            out.append(token)
-    return out
+    return True
 
 
 def _compute_endpoint_column_coverage(endpoint: Dict[str, Any], requested_fields: List[str]) -> int:
     if not requested_fields:
         return 0
-
-    alias_map = {
-        "email": ["email", "e-mail", "mail", "courriel"],
-        "telephone": ["telephone", "téléphone", "tel", "mobile", "gsm", "phone"],
-        "nom": ["nom", "name", "raison", "raison sociale", "intitule", "libelle"],
-        "code": ["code", "reference", "référence", "ref", "id"],
-        "adresse": ["adresse", "address", "addr"],
-        "ville": ["ville", "city"],
-    }
 
     endpoint_text = " ".join(
         [
@@ -666,32 +466,17 @@ def _compute_endpoint_column_coverage(endpoint: Dict[str, Any], requested_fields
             str(endpoint.get("url", "")),
             str(endpoint.get("description", "")),
             " ".join(str(k) for k in endpoint.get("keywords", [])),
-            " ".join(str(ex) for ex in endpoint.get("examples", [])),
             " ".join(str(tag) for tag in endpoint.get("tags", [])),
-            " ".join(str(q) for q in endpoint.get("queryParameters", [])),
-            " ".join(str(rp) for rp in endpoint.get("requiredParameters", [])),
+            " ".join(_endpoint_columns(endpoint)),
         ]
     ).lower()
     endpoint_tokens = set(_tokenize(endpoint_text))
 
     score = 0
     for field in requested_fields:
-        aliases = alias_map.get(field, [field])
-        hit = False
-        for alias in aliases:
-            alias_lower = str(alias).lower()
-            alias_tokens = set(_tokenize(alias_lower))
-            if alias_lower in endpoint_text or (alias_tokens and alias_tokens.issubset(endpoint_tokens)):
-                hit = True
-                break
-        if hit:
+        if str(field).lower() in endpoint_text:
             score += 3
-
-    url = str(endpoint.get("url", "")).lower()
-    if any(f in requested_fields for f in ["email", "telephone", "nom", "code"]):
-        if "/api/blclient/getallclients" in url:
-            score += 4
-        elif "/api/client/getallclients" in url:
+        elif set(_tokenize(str(field).lower())).issubset(endpoint_tokens):
             score += 2
 
     return score
@@ -701,7 +486,7 @@ def _rerank_endpoints_by_requested_fields(
     endpoints: List[Dict[str, Any]],
     requested_fields: List[str],
 ) -> List[Dict[str, Any]]:
-    normalized_fields = _normalize_requested_fields(requested_fields)
+    normalized_fields = _unique_strings(requested_fields)
     if not normalized_fields or len(endpoints) <= 1:
         return endpoints
 
@@ -717,43 +502,42 @@ def _rerank_endpoints_by_requested_fields(
 def _normalize_request_analysis(
     analysis: Dict[str, Any],
     question: str,
-    fallback_intent: str,
-    fallback_domain: str,
-    fallback_requested_fields: List[str],
+    previous_analysis: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
+    """
+    Nettoie l'analyse du modÃ¨le.
+    """
     normalized = analysis if isinstance(analysis, dict) else {}
     extracted_params = normalized.get("extracted_params", {})
     if not isinstance(extracted_params, dict):
         extracted_params = {}
 
+    # On garde ce que le modÃ¨le a renvoyÃ©
     requested_fields = _unique_strings(
-        normalized.get("requested_fields", extracted_params.get("requested_fields", fallback_requested_fields))
+        normalized.get("requested_fields", extracted_params.get("requested_fields", []))
     )
     if requested_fields:
         extracted_params["requested_fields"] = requested_fields
-
     missing = _unique_strings(normalized.get("missing", []))
-    intent = str(normalized.get("intent", fallback_intent) or fallback_intent).strip().upper()
-    if intent not in {"GET", "FILTER", "AGGREGATE"}:
-        intent = fallback_intent
-
-    domain = str(normalized.get("domain", fallback_domain) or fallback_domain).strip().lower()
-    allowed_domains = {"commercial", "stock", "finance", "rh", "achat", "general"}
-    if domain not in allowed_domains:
-        domain = fallback_domain
 
     entity = str(normalized.get("entity", "") or "").strip().lower()
+    
+    # Logique de fusion conversationnelle simple
+    if previous_analysis and not entity:
+        entity = previous_analysis.get("entity", "")
+    if previous_analysis and entity == previous_analysis.get("entity"):
+        # Fusionne les anciens paramètres avec les nouveaux pour permettre l'affinement (drill-down)
+        merged_params = dict(previous_analysis.get("extracted_params", {}))
+        merged_params.update(extracted_params)
+        extracted_params = merged_params
 
-    confidence = normalized.get("confidence", 0.0)
-    try:
-        confidence_value = float(confidence)
+    try: # Ensure confidence is a float
+        confidence_value = float(normalized.get("confidence", 0.0))
     except (TypeError, ValueError):
         confidence_value = 0.0
 
     return {
         "question": question,
-        "intent": intent,
-        "domain": domain,
         "entity": entity,
         "requested_fields": requested_fields,
         "extracted_params": extracted_params,
@@ -762,42 +546,65 @@ def _normalize_request_analysis(
     }
 
 
-def _extract_request_with_llama(question: str) -> tuple[Dict[str, Any], Optional[str]]:
-    use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
-    fallback_intent = "GET"
-    # TEMPORARILY: Use 'general' domain to allow DeepSeek Coder to see all endpoints without pre-filtering
-    fallback_domain = "general"  # Previously: _infer_domain_from_question(question)
-    fallback_requested_fields = _infer_requested_fields(question, _infer_dataset_table(question))
+def _analysis_is_weak(analysis: Dict[str, Any]) -> bool:
+    if not isinstance(analysis, dict):
+        return True
 
-    if not use_ollama:
-        return (
-            _normalize_request_analysis(
-                analysis={"requested_fields": fallback_requested_fields, "extracted_params": _extract_simple_params(question)},
-                question=question,
-                fallback_intent=fallback_intent,
-                fallback_domain=fallback_domain,
-                fallback_requested_fields=fallback_requested_fields,
-            ),
-            None,
-        )
+    entity = str(analysis.get("entity", "") or "").strip().lower()
+    requested_fields = _unique_strings(analysis.get("requested_fields", []))
+    extracted_params = analysis.get("extracted_params", {})
+    if not isinstance(extracted_params, dict):
+        extracted_params = {}
 
-    extractor_model = os.getenv("OLLAMA_MODEL_PARAM_EXTRACTOR", os.getenv("OLLAMA_MODEL_ANSWER", "llama3.2:latest"))
-    schema_hint = _build_schema_hint(_infer_dataset_table(question))
+    usable_params = {
+        str(key): value
+        for key, value in extracted_params.items()
+        if key not in {"requested_fields", "aggregations", "group_by", "groupby", "metrics"}
+        and value not in (None, "", [], {})
+    }
+
+    try:
+        confidence = float(analysis.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        confidence = 0.0
+
+    if entity and (requested_fields or usable_params):
+        return False
+    if entity and confidence >= 0.55:
+        return False
+    if requested_fields and confidence >= 0.55:
+        return False
+    return True
+
+
+def _extract_request_with_llama(question: str, history: List[Dict[str, str]] = None) -> tuple[Dict[str, Any], Optional[str]]:
+    """
+    Extraction purement basÃ©e sur le modÃ¨le.
+    """
+    extractor_model = os.getenv("OLLAMA_MODEL_PARAM_EXTRACTOR", "llama3.2")
+    mapping_context = _build_mapping_context(question=question) # Use default reduced values
+    
+    history_str = ""
+    if history:
+        history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history[-5:]])
+    
     system_prompt = (
         "You are an ERP request understanding assistant. "
-        "Your only job is to understand the user's business need and return strict JSON. "
-        "Do not choose APIs. Do not mention endpoints. Do not explain. "
-        "Return only JSON with keys: intent, domain, entity, requested_fields, extracted_params, missing, confidence."
+        "Your job is to identify the business entity and parameters. "
+        "Return only JSON with keys: entity, requested_fields, extracted_params, missing, confidence. Do not include 'intent'."
     )
     user_prompt = (
+        f"Conversation History:\n{history_str}\n\n"
         f"Question: {question}\n"
-        f"Schema hint: {json.dumps(schema_hint, ensure_ascii=False)}\n"
+        f"Business mapping context: {json.dumps(mapping_context, ensure_ascii=False)}\n"
         "Rules:\n"
-        "- intent must be one of GET, FILTER, AGGREGATE.\n"
-        "- domain must be one of commercial, stock, finance, rh, achat, general.\n"
         "- entity must be a short business noun like clients, articles, factures, paiements.\n"
-        "- requested_fields must be an array of columns explicitly requested by the user.\n"
-        "- extracted_params must contain only useful filters/identifiers/dates/codes from the question.\n"
+        "- requested_fields: List columns to display. If empty, infer standard fields (e.g. name, code).\n"
+        "- Do not invent default columns such as code, raison, tel unless the user asked for them.\n"
+        "- Distinguish display columns from filters: 'with email' or 'qui ont un email' usually means a filter on email presence, not automatically a request for telephone or code.\n"
+        "- extracted_params must contain only useful filters, identifiers, dates, codes, group_by fields, or aggregations clearly implied by the question.\n"
+        "- For aggregate questions, prefer extracted_params.group_by and extracted_params.aggregations.\n"
+        "- Never mix entities: fournisseurs is not clients, articles is not factures.\n"
         "- missing must list required business details still absent from the question.\n"
         "- confidence must be a float between 0 and 1.\n"
         "- If the user did not request specific fields, return requested_fields as []."
@@ -805,29 +612,22 @@ def _extract_request_with_llama(question: str) -> tuple[Dict[str, Any], Optional
 
     try:
         llm_json = _call_ollama_json(extractor_model, system_prompt, user_prompt)
+        if not isinstance(llm_json, dict):
+            raise Exception("Request extraction returned invalid JSON object.")
+        
         normalized = _normalize_request_analysis(
-            analysis=llm_json or {},
+            analysis=llm_json,
             question=question,
-            fallback_intent=fallback_intent,
-            fallback_domain=fallback_domain,
-            fallback_requested_fields=fallback_requested_fields,
         )
         return normalized, None
     except Exception as exc:
-        fallback = _normalize_request_analysis(
-            analysis={"requested_fields": fallback_requested_fields, "extracted_params": _extract_simple_params(question)},
-            question=question,
-            fallback_intent=fallback_intent,
-            fallback_domain=fallback_domain,
-            fallback_requested_fields=fallback_requested_fields,
-        )
-        return fallback, f"Request extraction Ollama error: {exc}"
+        raise Exception(f"Request extraction Ollama error: {exc}")
 
 
 def _call_ollama_chat(model: str, system_prompt: str, user_prompt: str, timeout_seconds: Optional[int] = None) -> str:
     url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
     if timeout_seconds is None:
-        timeout_seconds = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "180"))
+        timeout_seconds = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "600")) # Augmenter le timeout par dÃ©faut
     payload = {
         "model": model,
         "stream": False,
@@ -838,16 +638,91 @@ def _call_ollama_chat(model: str, system_prompt: str, user_prompt: str, timeout_
     }
     response = requests.post(url, json=payload, timeout=timeout_seconds)
     response.raise_for_status()
-    content = response.json().get("message", {}).get("content", "")
+
+    if not response.text or not response.text.strip():
+        raise ValueError(f"Ollama returned an empty HTTP response for model '{model}'.")
+
+    try:
+        decoded = response.json()
+    except ValueError as exc:
+        snippet = response.text.strip().replace("\n", " ")[:220]
+        raise ValueError(
+            f"Ollama returned non-JSON content for model '{model}': {snippet}"
+        ) from exc
+
+    content = decoded.get("message", {}).get("content", "")
     return content.strip()
 
 
-def _call_ollama_json(model: str, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
-    router_timeout_seconds = int(os.getenv("OLLAMA_ROUTER_TIMEOUT_SECONDS", os.getenv("OLLAMA_TIMEOUT_SECONDS", "180")))
-    raw = _call_ollama_chat(model, system_prompt, user_prompt, timeout_seconds=router_timeout_seconds)
-    # Tolerate fenced or plain JSON model outputs.
+def _extract_first_json_object(raw: str) -> Optional[str]:
+    text = raw.strip()
+    if not text:
+        return None
+
+    fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL | re.IGNORECASE)
+    if fence_match:
+        return fence_match.group(1).strip()
+
+    start = text.find("{")
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escape = False
+    for idx in range(start, len(text)):
+        char = text[idx]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == "\"":
+                in_string = False
+            continue
+
+        if char == "\"":
+            in_string = True
+            continue
+        if char == "{":
+            depth += 1
+            continue
+        if char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:idx + 1].strip()
+
+    return None
+
+
+def _call_ollama_json(model: str, system_prompt: str, user_prompt: str, timeout_seconds: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    # Auto-detect timeout based on model role (extractor, router, transformer)
+    if timeout_seconds is None:
+        extractor_model = os.getenv("OLLAMA_MODEL_PARAM_EXTRACTOR", "llama3.2")
+        router_model = os.getenv("OLLAMA_MODEL_ROUTER", "deepseek-coder:6.7b")
+        transformer_model = os.getenv("OLLAMA_MODEL_TRANSFORM", "deepseek-coder:6.7b")
+        
+        if model == router_model:
+            # Router uses dedicated router timeout
+            timeout_seconds = int(os.getenv("OLLAMA_ROUTER_TIMEOUT_SECONDS", "600")) # Augmenter le timeout
+        elif model == transformer_model:
+            # Transformer uses transform timeout
+            timeout_seconds = int(os.getenv("OLLAMA_TRANSFORM_TIMEOUT_SECONDS", "600")) # Augmenter le timeout
+        elif model == extractor_model or "llama" in model.lower() or "gemma" in model.lower():
+            # Extractor/answer models use standard timeout
+            timeout_seconds = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "600")) # Augmenter le timeout
+        else:
+            # Default to standard timeout for unknown models
+            timeout_seconds = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "600")) # Augmenter le timeout
+
+    raw = _call_ollama_chat(model, system_prompt, user_prompt, timeout_seconds=timeout_seconds)
     cleaned = raw.strip()
     cleaned = cleaned.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    extracted_json = _extract_first_json_object(cleaned)
+    if extracted_json:
+        cleaned = extracted_json
+    if not cleaned:
+        return None
     try:
         data = json.loads(cleaned)
         if isinstance(data, dict):
@@ -862,25 +737,6 @@ def _truncate_text(value: Any, max_length: int = 240) -> str:
     if len(text) <= max_length:
         return text
     return text[:max_length] + "..."
-
-
-def _build_router_candidates_payload(candidates: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
-    compact: List[Dict[str, Any]] = []
-    for candidate in candidates[:limit]:
-        compact.append(
-            {
-                "id": candidate.get("id"),
-                "url": candidate.get("url"),
-                "intent": candidate.get("intent"),
-                "requiredParameters": candidate.get("requiredParameters", []),
-                "queryParameters": candidate.get("queryParameters", [])[:6],
-                "role": candidate.get("role", "general"),
-                "tags": candidate.get("tags", [])[:4],
-                "description": _truncate_text(candidate.get("description", ""), 140),
-                "score": candidate.get("score", 0),
-            }
-        )
-    return compact
 
 
 def _build_answer_evidence(filtered: Dict[str, Any]) -> Dict[str, Any]:
@@ -916,9 +772,15 @@ def _build_candidate_pool(
     endpoints: List[Dict[str, Any]],
     analysis: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
-    # domain = str(analysis.get("domain", "general") or "general").lower()
-    # TEMPORARILY DISABLED: Domain-based filtering to allow DeepSeek Coder full access to all endpoints
-    requested_fields = _normalize_requested_fields(analysis.get("requested_fields", []))
+    """
+    Construit le pool de candidats sans filtrage par domaine ou rÃ´le.
+    Le modÃ¨le de routing fera le tri.
+    """
+    requested_fields = _unique_strings(analysis.get("requested_fields", []))
+    try:
+        routing_params = _unique_strings(column_router.collect_routing_params(analysis))
+    except Exception:
+        routing_params = []
 
     candidates: List[Dict[str, Any]] = []
     for endpoint in endpoints:
@@ -926,79 +788,73 @@ def _build_candidate_pool(
             continue
         if str(endpoint.get("method", "GET")).upper() != "GET":
             continue
-
-        # TEMPORARILY DISABLED: Role-based filtering
-        # endpoint_role = str(endpoint.get("role", "general") or "general").lower()
-        # if domain != "general" and endpoint_role not in {domain, "general"}:
-        #     continue
-
+        
+        # Aucun filtrage par domaine ou rÃ´le ici
         candidates.append(endpoint)
 
     if not candidates:
         candidates = [ep for ep in endpoints if str(ep.get("method", "GET")).upper() == "GET"]
 
-    return _rerank_endpoints_by_requested_fields(candidates, requested_fields)
+    rank_fields = routing_params or requested_fields
+    return _rerank_endpoints_by_requested_fields(candidates, rank_fields)
 
 
-def _route_request_with_deepseek(
+def _route_request_with_deepseek_resilient(
     question: str,
     analysis: Dict[str, Any],
     candidates: List[Dict[str, Any]],
 ) -> tuple[List[Dict[str, Any]], Dict[str, Any], Optional[str]]:
     extracted_params = dict(analysis.get("extracted_params", {}))
-    requested_fields = _normalize_requested_fields(analysis.get("requested_fields", []))
+    requested_fields = _unique_strings(analysis.get("requested_fields", []))
+    analysis_is_weak = _analysis_is_weak(analysis)
     if requested_fields:
         extracted_params["requested_fields"] = requested_fields
 
-    use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
-    router_model = os.getenv("OLLAMA_MODEL_ROUTER", "deepseek-coder:6.7b")
-
+    router_model = os.getenv(
+        "OLLAMA_MODEL_ROUTER",
+        os.getenv("OLLAMA_MODEL_PARAM_EXTRACTOR", "llama3.2"),
+    )
     if not candidates:
         return [], extracted_params, "No endpoint candidate available for routing."
 
-    if not use_ollama:
-        fallback = _rerank_endpoints_by_requested_fields(
-            candidates[: min(_determine_endpoint_limit(question, str(analysis.get("intent", "GET"))), len(candidates))],
-            requested_fields,
-        )
-        return fallback, extracted_params, None
+    llm_candidate_limit = min(len(candidates), int(os.getenv("ERP_ROUTER_CANDIDATE_LIMIT", "24")))
+    routing_catalog_text = _load_routing_catalog_text(candidates[:llm_candidate_limit])
 
-    llm_candidate_limit = min(len(candidates), int(os.getenv("ERP_ROUTER_CANDIDATE_LIMIT", "20")))
-    compact_candidates = _build_router_candidates_payload(candidates, llm_candidate_limit)
     system_prompt = (
-        "You are an ERP API router. "
-        "Your only job is to choose the best API endpoint ids from the provided catalog. "
-        "You receive a structured extraction already prepared by another model. "
-        "Do not reinterpret the business request from scratch. "
-        "Do not answer the user. "
-        "Return strict JSON only with keys: endpoint_ids, extracted_params."
+        "You are an ERP API router specialized in endpoint discrimination. "
+        "Choose the best endpoint ids from the provided catalog. "
+        "Use the structured analysis only when it is coherent. "
+        "If the analysis is weak or inconsistent, route directly from the user message and the catalog. "
+        "Return valid JSON ONLY with keys: endpoint_ids and extracted_params."
     )
     user_prompt = (
         f"Question: {question}\n"
-        f"Structured extraction: {json.dumps(analysis, ensure_ascii=False)}\n"
-        f"Candidate endpoints: {json.dumps(compact_candidates, ensure_ascii=False)}\n"
-        "Rules:\n"
-        "- endpoint_ids must use only ids present in Candidate endpoints.\n"
-        "- Choose the endpoint(s) that best satisfy the extracted domain/entity/filters/requested_fields.\n"
-        "- Prefer direct business endpoints over utility or overly generic endpoints.\n"
-        "- Use extracted_params only to normalize technical parameter names when useful.\n"
-        "- Keep extracted_params as a JSON object.\n"
-        "- Choose multiple endpoints only when strictly necessary."
+        f"Structured analysis: {json.dumps(analysis, ensure_ascii=False)}\n" # L'analyse n'a plus d'intent
+        f"Analysis reliability: {'weak' if analysis_is_weak else 'usable'}\n"
+        f"\nRouting catalog (ordered by relevance):\n{routing_catalog_text}\n"
+        "Selection rules:\n"
+        "1. Match the user message against endpoint columns and requested_fields.\n"
+        "2. If analysis reliability is weak, ignore wrong entity or wrong requested_fields and route directly from the question.\n"
+        "3. endpoint_ids MUST contain ONLY ids present in the catalog.\n"
+        "4. Return a single endpoint unless multiple routes are truly required.\n"
+        "5. Prefer endpoints listed earlier when the match quality is similar.\n"
+        "6. extracted_params may repair bad extraction when the route is obvious from the question.\n"
+        "7. Use endpoint columns to distinguish similar routes and to preserve requested display/grouping fields.\n"
+        "8. Do not invent parameters unrelated to the selected endpoint.\n"
+        "9. If the user asks for stats, totals, count, sum, avg, grouped, monthly, yearly, or by-client results, keep that aggregation intent inside extracted_params.\n"
+        "10. In columns-only mode, do not use url, tags, or description.\n"
+        "Return JSON: {\"endpoint_ids\": [\"id\"], \"extracted_params\": {...}}"
     )
 
     try:
         llm_choice = _call_ollama_json(router_model, system_prompt, user_prompt) or {}
     except Exception as exc:
-        fallback = _rerank_endpoints_by_requested_fields(
-            candidates[: min(_determine_endpoint_limit(question, str(analysis.get("intent", "GET"))), len(candidates))],
-            requested_fields,
-        )
-        return fallback, extracted_params, f"Router Ollama error: {exc}"
+        raise Exception(f"Router Ollama error: {exc}")
 
     llm_params = llm_choice.get("extracted_params", {})
     if isinstance(llm_params, dict):
         extracted_params.update(llm_params)
-    if requested_fields:
+    if requested_fields and "requested_fields" not in extracted_params:
         extracted_params["requested_fields"] = requested_fields
 
     endpoint_ids = llm_choice.get("endpoint_ids", [])
@@ -1011,14 +867,11 @@ def _route_request_with_deepseek(
             selected_endpoints = [candidate for candidate in candidates if str(candidate.get("id")) == str(endpoint_id)]
 
     if not selected_endpoints:
-        fallback = _rerank_endpoints_by_requested_fields(
-            candidates[: min(_determine_endpoint_limit(question, str(analysis.get("intent", "GET"))), len(candidates))],
-            requested_fields,
-        )
-        return fallback, extracted_params, "Router returned no valid endpoint_ids."
+        raise Exception("Router returned no valid endpoint_ids.")
 
-    limit = min(_determine_endpoint_limit(question, str(analysis.get("intent", "GET"))), len(selected_endpoints))
-    return _rerank_endpoints_by_requested_fields(selected_endpoints, requested_fields)[:limit], extracted_params, None
+    limit = min(len(selected_endpoints), int(os.getenv("ERP_ROUTER_MAX_SELECTED", "3")))
+    return selected_endpoints[:limit], extracted_params, None
+
 
 
 def _persist_display_result(
@@ -1027,8 +880,8 @@ def _persist_display_result(
     filtered_result: Dict[str, Any],
     answer: str,
     errors: List[str],
-    schema_hint: Optional[Dict[str, Any]] = None,
     extracted_params: Optional[Dict[str, Any]] = None,
+    request_analysis: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     payload = {
         "generatedAt": datetime.now(UTC).isoformat(),
@@ -1041,7 +894,7 @@ def _persist_display_result(
             }
             for ep in selected_endpoints
         ],
-        "schemaHint": schema_hint or filtered_result.get("schema_hint", {}),
+        "requestAnalysis": request_analysis or {},
         "extractedParams": extracted_params or {},
         "display": {
             "count": filtered_result.get("count", 0),
@@ -1055,11 +908,29 @@ def _persist_display_result(
     return payload
 
 
-def _persist_transform_plan(question: str, plan: Dict[str, Any]) -> Dict[str, Any]:
+def _persist_transform_plan_result(
+    question: str,
+    plan: Dict[str, Any],
+    request_analysis: Optional[Dict[str, Any]] = None,
+    extracted_params: Optional[Dict[str, Any]] = None,
+    selected_endpoints: Optional[List[Dict[str, Any]]] = None,
+    errors: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     payload = {
         "generatedAt": datetime.now(UTC).isoformat(),
         "question": question,
+        "requestAnalysis": request_analysis or {},
+        "extractedParams": extracted_params or {},
+        "endpoints": [
+            {
+                "id": ep.get("id"),
+                "url": ep.get("url"),
+                "method": ep.get("method", "GET"),
+            }
+            for ep in (selected_endpoints or [])
+        ],
         "plan": plan,
+        "errors": errors or [],
     }
     TRANSFORM_PLAN_PATH.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return payload
@@ -1078,56 +949,215 @@ def _flatten_api_records(records: List[Any]) -> List[Dict[str, Any]]:
     return flattened
 
 
-def _build_fallback_transform_plan(
-    requested_fields: List[str],
-    question: str,
-    schema_hint: Dict[str, Any],
-) -> Dict[str, Any]:
-    steps: List[Dict[str, Any]] = []
-    resolved_fields = _resolve_requested_fields_with_schema(question, requested_fields, schema_hint if schema_hint.get("columns") else None)
-    if resolved_fields:
-        steps.append({"op": "select", "columns": resolved_fields})
-    steps.append({"op": "limit", "value": 20})
-    return {"steps": steps}
+def _build_api_result_context(records: List[Dict[str, Any]], max_rows: int = 5, max_columns: int = 12) -> Dict[str, Any]:
+    columns: List[str] = []
+    for row in records[:max_rows]:
+        if not isinstance(row, dict):
+            continue
+        for key in row.keys():
+            if str(key).startswith("_"):
+                continue
+            if key not in columns:
+                columns.append(str(key))
+    preview_rows: List[Dict[str, Any]] = []
+    for row in records[:max_rows]:
+        if not isinstance(row, dict):
+            continue
+        preview: Dict[str, Any] = {}
+        for key in columns[:max_columns]:
+            if key in row:
+                preview[key] = row[key]
+        preview_rows.append(preview)
+    return {
+        "record_count": len(records),
+        "available_columns": columns[:max_columns],
+        "sample_rows": preview_rows,
+    }
 
 
-def _build_transform_plan(
+def _normalize_transform_condition(condition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if not isinstance(condition, dict):
+        return None
+
+    field = str(condition.get("field") or condition.get("column") or "").strip()
+    if not field:
+        return None
+
+    raw_operator = str(condition.get("operator", "equals")).strip().lower()
+    operator_map = {
+        "=": "equals", "==": "equals", "eq": "equals", "is": "equals",
+        "!=": "not_equals", "<>": "not_equals", "ne": "not_equals",
+        "contains": "contains", "like": "contains",
+        "is_null": "is_null", "not_null": "not_null",
+        ">": "gt", ">=": "gte", "<": "lt", "<=": "lte",
+    }
+    operator = operator_map.get(raw_operator, raw_operator)
+    if operator not in {"equals", "not_equals", "contains", "is_null", "not_null", "gt", "gte", "lt", "lte"}:
+        operator = "equals"
+
+    value = condition.get("value")
+    # Reject conditions without value for operators that require it (not is_null, not_null)
+    if operator not in {"is_null", "not_null"} and value is None:
+        return None
+
+    return {
+        "field": field,
+        "operator": operator,
+        "value": value,
+    }
+
+
+def _normalize_transform_plan_for_execution(plan: Dict[str, Any]) -> Dict[str, Any]:
+    steps = plan.get("steps", []) if isinstance(plan, dict) else []
+    normalized_steps: List[Dict[str, Any]] = []
+
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        op = str(step.get("op", "")).strip().lower()
+        # Support aggregate operations executed locally
+        if op not in {"select", "rename", "filter_rows", "sort", "limit", "aggregate"}:
+            continue
+
+        if op == "select":
+            raw_columns = step.get("columns", step.get("fields", []))
+            columns = [str(column).strip() for column in raw_columns if str(column).strip()] if isinstance(raw_columns, list) else []
+            if columns:
+                normalized_steps.append({"op": "select", "columns": columns})
+            continue
+
+        if op == "rename":
+            mapping = step.get("mapping", {})
+            if isinstance(mapping, dict) and mapping:
+                normalized_steps.append(
+                    {"op": "rename", "mapping": {str(key): str(value) for key, value in mapping.items()}}
+                )
+            continue
+
+        if op == "filter_rows":
+            raw_conditions = step.get("conditions", [])
+            conditions = []
+            if isinstance(raw_conditions, list):
+                for condition in raw_conditions:
+                    normalized = _normalize_transform_condition(condition) if isinstance(condition, dict) else None
+                    if normalized:
+                        conditions.append(normalized)
+            if conditions:
+                normalized_steps.append({"op": "filter_rows", "conditions": conditions})
+            continue
+
+        if op == "sort":
+            field = str(step.get("field") or step.get("column") or "").strip()
+            if field:
+                direction = str(step.get("direction", "asc")).strip().lower()
+                normalized_steps.append(
+                    {"op": "sort", "field": field, "direction": "desc" if direction == "desc" else "asc"}
+                )
+            continue
+
+        if op == "limit":
+            try:
+                limit_value = int(step.get("value", 20))
+            except (TypeError, ValueError):
+                limit_value = 20
+            normalized_steps.append({"op": "limit", "value": max(1, limit_value)})
+            continue
+
+        if op == "aggregate":
+            raw_groupby = step.get("groupby", step.get("group_by", []))
+            if isinstance(raw_groupby, list):
+                groupby = [str(item).strip() for item in raw_groupby if str(item).strip()]
+            elif raw_groupby:
+                groupby = [str(raw_groupby).strip()]
+            else:
+                groupby = []
+
+            raw_aggs = step.get("aggs", step.get("aggregations", []))
+            normalized_aggs: List[Dict[str, Any]] = []
+            if isinstance(raw_aggs, list):
+                for agg in raw_aggs:
+                    if isinstance(agg, dict):
+                        field = str(agg.get("field", "")).strip()
+                        func = str(agg.get("agg", agg.get("function", ""))).strip().lower()
+                        as_name = str(agg.get("as", "")).strip() or None
+                        if field and func in {"sum", "avg", "mean", "count", "min", "max"}:
+                            normalized_aggs.append({"field": field, "agg": func, "as": as_name})
+                        continue
+                    if isinstance(agg, str):
+                        match = re.match(
+                            r"\s*(sum|avg|mean|count|min|max)\s*\(?\s*([a-zA-Z0-9_]+)\s*\)?\s*(?:as\s+([a-zA-Z0-9_]+))?\s*",
+                            agg,
+                            re.IGNORECASE,
+                        )
+                        if match:
+                            normalized_aggs.append(
+                                {
+                                    "field": match.group(2),
+                                    "agg": match.group(1).lower(),
+                                    "as": match.group(3) or None,
+                                }
+                            )
+            if normalized_aggs:
+                normalized_steps.append({"op": "aggregate", "groupby": groupby, "aggs": normalized_aggs})
+            continue
+
+    if normalized_steps and not any(step.get("op") == "limit" for step in normalized_steps):
+        normalized_steps.append({"op": "limit", "value": 20})
+
+    return {"steps": normalized_steps}
+
+
+def _build_transform_plan_with_llama(
     question: str,
-    requested_fields: List[str],
-    schema_hint: Dict[str, Any],
+    analysis: Dict[str, Any],
+    extracted_params: Dict[str, Any],
+    api_result_context: Dict[str, Any],
 ) -> tuple[Dict[str, Any], Optional[str]]:
-    fallback_plan = _build_fallback_transform_plan(requested_fields, question, schema_hint)
-    use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
-    if not use_ollama:
-        return fallback_plan, None
+    model = os.getenv(
+        "OLLAMA_MODEL_TRANSFORM",
+        os.getenv("OLLAMA_MODEL_PARAM_EXTRACTOR", os.getenv("OLLAMA_MODEL_ANSWER", "llama3.2")),
+    )
+    mapping_context = _build_mapping_context(question=question)
+    requested_fields = _unique_strings(analysis.get("requested_fields", []))
+    analysis_is_weak = _analysis_is_weak(analysis)
 
-    model = os.getenv("OLLAMA_MODEL_ANSWER", "llama3.2:latest")
     system_prompt = (
-        "You generate strict JSON transformation plans for tabular ERP results. "
-        "Do not write code. "
-        "Return only JSON with key: steps. "
-        "Allowed ops are: select, rename, filter_rows, sort, limit."
+        "You generate strict JSON transformation plans for ERP tabular results. "
+        "Think like a pandas planner, but return JSON only. "
+        "Allowed ops are: select, filter_rows, sort, limit, aggregate. "
+        "Do not write Python code. Do not invent columns. "
+        "Return only JSON with key: steps."
     )
     user_prompt = (
         f"Question: {question}\n"
+        f"Structured analysis: {json.dumps(analysis, ensure_ascii=False)}\n"
+        f"Analysis reliability: {'weak' if analysis_is_weak else 'usable'}\n"
         f"Requested fields: {json.dumps(requested_fields, ensure_ascii=False)}\n"
-        f"Schema hint: {json.dumps(schema_hint, ensure_ascii=False)}\n"
-        "Rules:\n"
-        "- Use select when the user explicitly asks for columns.\n"
-        "- Keep steps minimal.\n"
-        "- If the user says seulement/uniquement, keep only the matching columns.\n"
-        "- Always end with a reasonable limit step when no other limit exists.\n"
+        f"Extracted params: {json.dumps(extracted_params, ensure_ascii=False)}\n"
+        f"Business mapping context: {json.dumps(mapping_context, ensure_ascii=False)}\n"
+        f"Retrieved API result context: {json.dumps(api_result_context, ensure_ascii=False)}\n"
+        "Planning rules:\n"
+        "1. Build the plan only from real available_columns.\n"
+        "2. If the analysis is weak, infer the display/filter/aggregate intent directly from the original question and the real columns.\n"
+        "3. requested_fields must contain only columns explicitly requested for display.\n"
+        "4. Expressions like 'qui ont un email', 'avec email', 'non vide', 'renseigne' usually mean filter_rows with operator not_null.\n"
+        "5. For totals, counts, sums, averages, grouped or monthly questions, use aggregate with groupby and aggs.\n"
+        "6. Use select only for display columns, not for hidden filter columns.\n"
+        "7. Use sort only when the question implies order.\n"
+        "8. Add limit only when needed to keep the result readable.\n"
+        "9. Return the minimal valid plan.\n"
+        "Example aggregate step: {\"op\":\"aggregate\",\"groupby\":[\"client\"],\"aggs\":[{\"field\":\"montant\",\"agg\":\"sum\",\"as\":\"total_montant\"}]}\n"
+        "Return JSON: {\"steps\": [...]}"
     )
+
     try:
-        plan = _call_ollama_json(model, system_prompt, user_prompt) or {}
-        steps = plan.get("steps", [])
-        if not isinstance(steps, list):
-            return fallback_plan, "Transform plan Ollama returned invalid steps."
-        if not any(isinstance(step, dict) and step.get("op") == "limit" for step in steps):
-            steps.append({"op": "limit", "value": 20})
-        return {"steps": steps}, None
+        raw_plan = _call_ollama_json(model, system_prompt, user_prompt) or {}
+        plan = _normalize_transform_plan_for_execution(raw_plan)
+        if not plan.get("steps"):
+            raise Exception("Transform plan Ollama returned no executable steps.")
+        return plan, None
     except Exception as exc:
-        return fallback_plan, f"Transform plan Ollama error: {exc}"
+        raise Exception(f"Transform plan Ollama error: {exc}")
 
 
 def _apply_select_rows(rows: List[Dict[str, Any]], columns: List[str]) -> List[Dict[str, Any]]:
@@ -1168,8 +1198,27 @@ def _apply_filter_rows(rows: List[Dict[str, Any]], conditions: List[Dict[str, An
         current = row.get(field)
         if operator == "equals":
             return current == value
+        if operator == "not_equals":
+            return current != value
         if operator == "contains":
             return str(value).lower() in str(current).lower()
+        if operator == "is_null":
+            return current is None
+        if operator == "not_null":
+            return current is not None
+        if operator in {"gt", "gte", "lt", "lte"}:
+            try:
+                current_num = float(current)
+                value_num = float(value)
+            except (TypeError, ValueError):
+                return True
+            if operator == "gt":
+                return current_num > value_num
+            if operator == "gte":
+                return current_num >= value_num
+            if operator == "lt":
+                return current_num < value_num
+            return current_num <= value_num
         return True
 
     return [row for row in rows if all(matches(row, condition) for condition in conditions if isinstance(condition, dict))]
@@ -1182,17 +1231,265 @@ def _apply_sort_rows(rows: List[Dict[str, Any]], field: str, direction: str) -> 
     return sorted(rows, key=lambda row: str(row.get(field, "")), reverse=reverse)
 
 
+def _coerce_number(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        try:
+            num = float(value)
+            if math.isnan(num) or math.isinf(num):
+                return None
+            return num
+        except (TypeError, ValueError):
+            return None
+    if isinstance(value, str):
+        text = value.strip().replace(" ", "")
+        if not text:
+            return None
+        try:
+            num = float(text)
+            if math.isnan(num) or math.isinf(num):
+                return None
+            return num
+        except ValueError:
+            return None
+    return None
+
+
+def _apply_aggregate_rows(rows: List[Dict[str, Any]], groupby: List[str], aggs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not aggs:
+        return rows
+
+    normalized_groupby = [str(item).strip() for item in (groupby or []) if str(item).strip()]
+
+    # group_key -> accumulator
+    groups: Dict[tuple, Dict[str, Any]] = {}
+
+    def key_for(row: Dict[str, Any]) -> tuple:
+        if not normalized_groupby:
+            return ("__all__",)
+        return tuple(row.get(field) for field in normalized_groupby)
+
+    # Initialize accumulators
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        gk = key_for(row)
+        if gk not in groups:
+            groups[gk] = {
+                "__count_rows__": 0,
+                "__sum__": {},
+                "__count__": {},
+                "__min__": {},
+                "__max__": {},
+            }
+        acc = groups[gk]
+        acc["__count_rows__"] += 1
+
+        for agg in aggs:
+            if not isinstance(agg, dict):
+                continue
+            field = str(agg.get("field", "")).strip()
+            func = str(agg.get("agg", "sum")).strip().lower()
+            if not field:
+                continue
+            value = row.get(field)
+            num = _coerce_number(value)
+
+            if func in {"sum", "avg", "mean"}:
+                if num is None:
+                    continue
+                acc["__sum__"][field] = float(acc["__sum__"].get(field, 0.0)) + num
+                acc["__count__"][field] = int(acc["__count__"].get(field, 0)) + 1
+                continue
+
+            if func == "count":
+                # count non-null values for that field
+                if value is None:
+                    continue
+                acc["__count__"][field] = int(acc["__count__"].get(field, 0)) + 1
+                continue
+
+            if func in {"min", "max"}:
+                if value is None:
+                    continue
+                container_key = "__min__" if func == "min" else "__max__"
+                current = acc[container_key].get(field)
+                # Prefer numeric comparison when possible
+                if num is not None:
+                    current_num = _coerce_number(current)
+                    if current is None or current_num is None:
+                        acc[container_key][field] = num
+                    else:
+                        if func == "min":
+                            acc[container_key][field] = min(float(current_num), float(num))
+                        else:
+                            acc[container_key][field] = max(float(current_num), float(num))
+                else:
+                    # Fallback to string comparison
+                    if current is None:
+                        acc[container_key][field] = value
+                    else:
+                        if func == "min":
+                            acc[container_key][field] = min(str(current), str(value))
+                        else:
+                            acc[container_key][field] = max(str(current), str(value))
+
+    # Build output rows
+    out: List[Dict[str, Any]] = []
+    for gk, acc in groups.items():
+        row: Dict[str, Any] = {}
+        if normalized_groupby:
+            for idx, field in enumerate(normalized_groupby):
+                row[field] = gk[idx] if idx < len(gk) else None
+
+        for agg in aggs:
+            if not isinstance(agg, dict):
+                continue
+            field = str(agg.get("field", "")).strip()
+            func = str(agg.get("agg", "sum")).strip().lower()
+            if not field:
+                continue
+            as_name = str(agg.get("as") or "").strip() or f"{func}_{field}"
+
+            if func == "sum":
+                row[as_name] = acc["__sum__"].get(field)
+            elif func in {"avg", "mean"}:
+                total = acc["__sum__"].get(field)
+                count = acc["__count__"].get(field)
+                row[as_name] = (float(total) / float(count)) if (total is not None and count) else None
+            elif func == "count":
+                row[as_name] = acc["__count__"].get(field, 0)
+            elif func == "min":
+                row[as_name] = acc["__min__"].get(field)
+            elif func == "max":
+                row[as_name] = acc["__max__"].get(field)
+            else:
+                # Unsupported agg function in fallback: ignore
+                pass
+
+        out.append(row)
+
+    return out
+
+
+def _extract_filter_conditions_from_extracted_params(extracted_params: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not isinstance(extracted_params, dict):
+        return []
+
+    conditions: List[Dict[str, Any]] = []
+
+    # Preferred explicit shape
+    for key in ("filters", "conditions"):
+        raw = extracted_params.get(key)
+        if isinstance(raw, list):
+            for item in raw:
+                normalized = _normalize_transform_condition(item) if isinstance(item, dict) else None
+                if normalized:
+                    conditions.append(normalized)
+
+    # Back-compat: interpret extracted_params.{field} values
+    for field, raw_value in extracted_params.items():
+        if field in {"requested_fields", "aggregations", "group_by", "groupby", "metrics", "aggs", "tables", "filters", "conditions"}:
+            continue
+        if raw_value is None:
+            continue
+
+        if isinstance(raw_value, dict):
+            # { operator: 'not_null', value: ... }
+            if "operator" in raw_value or "op" in raw_value:
+                candidate = {
+                    "field": field,
+                    "operator": raw_value.get("operator", raw_value.get("op", "equals")),
+                    "value": raw_value.get("value"),
+                }
+                normalized = _normalize_transform_condition(candidate)
+                if normalized:
+                    conditions.append(normalized)
+                continue
+
+            # Short forms: {not_null:true}, {is_null:true}, {gt:10}, {contains:'abc'}
+            if raw_value.get("not_null") is True:
+                conditions.append({"field": field, "operator": "not_null", "value": "__ignored__"})
+                continue
+            if raw_value.get("is_null") is True:
+                conditions.append({"field": field, "operator": "is_null", "value": "__ignored__"})
+                continue
+            for op_key, mapped in [("gt", "gt"), ("gte", "gte"), ("lt", "lt"), ("lte", "lte")]:
+                if op_key in raw_value:
+                    conditions.append({"field": field, "operator": mapped, "value": raw_value.get(op_key)})
+                    break
+            else:
+                if "contains" in raw_value:
+                    conditions.append({"field": field, "operator": "contains", "value": raw_value.get("contains")})
+            continue
+
+        if isinstance(raw_value, str) and raw_value.strip().lower() in {"not_null", "notnull"}:
+            conditions.append({"field": field, "operator": "not_null", "value": "__ignored__"})
+            continue
+        if isinstance(raw_value, str) and raw_value.strip().lower() in {"is_null", "null", "isnull"}:
+            conditions.append({"field": field, "operator": "is_null", "value": "__ignored__"})
+            continue
+
+        conditions.append({"field": field, "operator": "equals", "value": raw_value})
+
+    # Normalize + drop placeholders
+    normalized_conditions: List[Dict[str, Any]] = []
+    for cond in conditions:
+        normalized = _normalize_transform_condition(cond)
+        if normalized:
+            normalized_conditions.append(normalized)
+    return normalized_conditions
+
+
 def _apply_transform_plan_with_pandas(records: List[Dict[str, Any]], plan: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
     try:
-        import pandas as pd  # type: ignore
+        import pandas as pd
     except ImportError:
         return None
 
     df = pd.DataFrame(records)
-    for step in plan.get("steps", []):
+    normalized_plan = _normalize_transform_plan_for_execution(plan)
+    for step in normalized_plan.get("steps", []):
         if not isinstance(step, dict):
             continue
         op = step.get("op")
+        if op == "aggregate":
+            # Aggregate handled by pandas implementation
+            groupby = step.get("groupby") or []
+            aggs = step.get("aggs") or []
+            if not groupby or not aggs:
+                continue
+            # build agg dict for pandas
+            agg_dict = {}
+            rename_map = {}
+            for agg in aggs:
+                field = agg.get("field")
+                func = str(agg.get("agg", "sum")).lower()
+                as_name = agg.get("as") or f"{func}_{field}"
+                if field not in df.columns:
+                    continue
+                # pandas accepts mapping like {'field': 'sum'} or {'field': ['sum']}
+                agg_dict.setdefault(field, []).append(func)
+                rename_map[f"{field}"] = None
+            if not agg_dict:
+                continue
+            grouped = df.groupby([g for g in groupby if g in df.columns]).agg(agg_dict)
+            # flatten multiindex columns
+            grouped.columns = ["_".join([col for col in col_tuple if col]) for col_tuple in grouped.columns.to_flat_index()]
+            grouped = grouped.reset_index()
+            # rename aggregated columns using provided 'as' names when possible
+            for agg in aggs:
+                field = agg.get("field")
+                func = str(agg.get("agg", "sum")).lower()
+                as_name = agg.get("as") or f"{func}_{field}"
+                generated_col = f"{field}_{func}"
+                if generated_col in grouped.columns:
+                    grouped = grouped.rename(columns={generated_col: as_name})
+            df = grouped
+            continue
         if op == "select":
             columns = [column for column in step.get("columns", []) if column in df.columns]
             if columns:
@@ -1212,8 +1509,28 @@ def _apply_transform_plan_with_pandas(records: List[Dict[str, Any]], plan: Dict[
                 value = condition.get("value")
                 if operator == "equals":
                     df = df[df[field] == value]
+                elif operator == "not_equals":
+                    df = df[df[field] != value]
                 elif operator == "contains":
                     df = df[df[field].astype(str).str.contains(str(value), case=False, na=False)]
+                elif operator == "is_null":
+                    df = df[df[field].isna()]
+                elif operator == "not_null":
+                    df = df[df[field].notna()]
+                elif operator in {"gt", "gte", "lt", "lte"}:
+                    num_series = pd.to_numeric(df[field], errors="coerce")
+                    try:
+                        value_num = float(value)
+                    except (TypeError, ValueError):
+                        continue
+                    if operator == "gt":
+                        df = df[num_series > value_num]
+                    elif operator == "gte":
+                        df = df[num_series >= value_num]
+                    elif operator == "lt":
+                        df = df[num_series < value_num]
+                    else:
+                        df = df[num_series <= value_num]
         elif op == "sort":
             field = step.get("field")
             if field in df.columns:
@@ -1229,8 +1546,9 @@ def _apply_transform_plan(records: List[Dict[str, Any]], plan: Dict[str, Any]) -
     if pandas_result is not None:
         return pandas_result
 
+    normalized_plan = _normalize_transform_plan_for_execution(plan)
     rows = [dict(record) for record in records if isinstance(record, dict)]
-    for step in plan.get("steps", []):
+    for step in normalized_plan.get("steps", []):
         if not isinstance(step, dict):
             continue
         op = step.get("op")
@@ -1240,6 +1558,12 @@ def _apply_transform_plan(records: List[Dict[str, Any]], plan: Dict[str, Any]) -
             rows = _apply_rename_rows(rows, step.get("mapping", {}))
         elif op == "filter_rows":
             rows = _apply_filter_rows(rows, step.get("conditions", []))
+        elif op == "aggregate":
+            rows = _apply_aggregate_rows(
+                rows,
+                step.get("groupby") or step.get("group_by") or [],
+                step.get("aggs") or step.get("aggregations") or [],
+            )
         elif op == "sort":
             rows = _apply_sort_rows(rows, str(step.get("field", "")), str(step.get("direction", "asc")))
         elif op == "limit":
@@ -1259,7 +1583,6 @@ def _get_erp_api_base_urls() -> List[str]:
     if explicit:
         return [explicit]
 
-    # Optional auto-discovery from the local WebApi project path.
     webapi_project_dir = os.getenv("ERP_WEBAPI_PROJECT_DIR", "").strip()
     if not webapi_project_dir:
         return []
@@ -1271,15 +1594,11 @@ def _get_erp_api_base_urls() -> List[str]:
     try:
         payload = json.loads(launch_settings.read_text(encoding="utf-8-sig"))
         profiles = payload.get("profiles", {})
-
-        # Prefer explicit WebApi profile, then fallback to any profile containing applicationUrl.
         candidate_profiles: List[Dict[str, Any]] = []
         if isinstance(profiles, dict):
             if isinstance(profiles.get("WebApi"), dict):
                 candidate_profiles.append(profiles["WebApi"])
-            candidate_profiles.extend(
-                p for p in profiles.values() if isinstance(p, dict) and p not in candidate_profiles
-            )
+            candidate_profiles.extend(p for p in profiles.values() if isinstance(p, dict) and p not in candidate_profiles)
 
         urls: List[str] = []
         for profile in candidate_profiles:
@@ -1292,10 +1611,9 @@ def _get_erp_api_base_urls() -> List[str]:
         return urls
     except (json.JSONDecodeError, OSError):
         return []
-
     return []
 
-
+# _build_endpoint_url et _collect_request_parts sont utilisÃ©s
 def _build_endpoint_url(url_template: str, params: Dict[str, Any]) -> str:
     route_params = re.findall(r"\{([^{}]+)\}", url_template)
     rendered = url_template
@@ -1318,7 +1636,6 @@ def _collect_request_parts(selected: Dict[str, Any], params: Dict[str, Any]) -> 
     missing_required = [key for key in required if key not in params]
     query_params = {k: params[k] for k in query_keys if k in params}
 
-    # Safe defaults for list endpoints with pagination support.
     if "pageNumber" in query_keys and "pageNumber" not in query_params:
         query_params["pageNumber"] = 1
     if "pageSize" in query_keys and "pageSize" not in query_params:
@@ -1329,55 +1646,11 @@ def _collect_request_parts(selected: Dict[str, Any], params: Dict[str, Any]) -> 
         "query_params": query_params,
     }
 
-
 def _normalize_data_field(payload: Any) -> List[Any]:
-    if isinstance(payload, list):
-        return payload
-    if isinstance(payload, dict):
-        # Common ERP envelope: { "data": [...] }
-        if isinstance(payload.get("data"), list):
-            return payload["data"]
-        if isinstance(payload.get("results"), list):
-            return payload["results"]
-        if isinstance(payload.get("value"), list):
-            return payload["value"]
-        if isinstance(payload.get("items"), list):
-            return payload["items"]
-        if isinstance(payload.get("data"), dict):
-            return [payload["data"]]
-        return [payload]
-    return []
-
-
-def _split_path_tokens(text: str) -> List[str]:
-    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
-    raw = re.split(r"[^a-zA-Z0-9]+", text.lower())
-    return [t for t in raw if t]
-
-
-def _singularize(token: str) -> str:
-    if token.endswith("ies") and len(token) > 3:
-        return token[:-3] + "y"
-    if token.endswith("s") and len(token) > 3:
-        return token[:-1]
-    return token
-
-
-def _fetch_swagger_paths_with_methods(base_urls: List[str]) -> Dict[str, List[str]]:
-    for base_url in base_urls:
-        try:
-            response = requests.get(f"{base_url}/swagger/v1/swagger.json", timeout=20)
-            response.raise_for_status()
-            payload = response.json()
-            path_map: Dict[str, List[str]] = {}
-            for path, methods in payload.get("paths", {}).items():
-                if isinstance(methods, dict):
-                    path_map[path] = [m.upper() for m in methods.keys()]
-            if path_map:
-                return path_map
-        except requests.RequestException:
-            continue
-    return {}
+    # Simplified data normalization
+    if isinstance(payload, dict) and payload.get("data") is not None:
+        return payload["data"] if isinstance(payload["data"], list) else [payload["data"]]
+    return payload if isinstance(payload, list) else ([payload] if payload is not None else [])
 
 
 def _resolve_endpoint_path_from_swagger(
@@ -1386,78 +1659,37 @@ def _resolve_endpoint_path_from_swagger(
     selected: Dict[str, Any],
     swagger_paths: Dict[str, List[str]],
 ) -> str:
-    if not swagger_paths:
-        return requested_path
-
-    method = method.upper()
-
-    if requested_path in swagger_paths and method in swagger_paths[requested_path]:
-        return requested_path
-
-    for path, methods in swagger_paths.items():
-        if path.lower() == requested_path.lower() and method in methods:
-            return path
-
-    req_tokens = set(_singularize(t) for t in _split_path_tokens(requested_path))
-    req_tokens.update(_singularize(t) for t in _split_path_tokens(selected.get("id", "")))
-    for kw in selected.get("keywords", []):
-        req_tokens.update(_singularize(t) for t in _split_path_tokens(str(kw)))
-
-    requires_identifier = bool(selected.get("requiredParameters") or selected.get("routeParameters"))
-    core_tokens = {
-        t for t in (_singularize(x) for x in _split_path_tokens(requested_path)) if t not in {"api", "odata"}
-    }
-    requested_tail = requested_path.strip("/").split("/")[-1]
-    requested_tail_norm = re.sub(r"[^a-zA-Z0-9]+", "", requested_tail.lower())
-
-    best_path = requested_path
-    best_score = -1
-    for path, methods in swagger_paths.items():
-        if method not in methods:
-            continue
-        path_tokens = set(_singularize(t) for t in _split_path_tokens(path))
-        overlap = len(req_tokens.intersection(path_tokens))
-        bonus = 0
-        if requested_path.lower().startswith("/api/") and path.lower().startswith("/api/"):
-            bonus += 1
-        if method == "GET" and any(tok in path_tokens for tok in ["get", "all", "list"]):
-            bonus += 1
-        if not requires_identifier and any(tok in path_tokens for tok in ["all", "list"]):
-            bonus += 2
-        if not requires_identifier and ("byid" in path.lower() or "{" in path):
-            bonus -= 3
-        if requires_identifier and ("byid" in path.lower() or "{" in path):
-            bonus += 1
-
-        core_overlap = len(core_tokens.intersection(path_tokens))
-        if core_overlap == 0:
-            bonus -= 3
-
-        path_norm = re.sub(r"[^a-zA-Z0-9]+", "", path.lower())
-        if requested_tail_norm and requested_tail_norm in path_norm:
-            bonus += 3
-
-        score = overlap + (2 * core_overlap) + bonus
-        if score > best_score:
-            best_score = score
-            best_path = path
-
-    return best_path
+    # Swagger paths est toujours vide, donc on retourne directement le chemin demandÃ©
+    # Supprime la logique de recherche Swagger inutile
+    return requested_path
 
 
 # ---------- Graph Nodes ----------
 def extract_user_request(state: AssistantState) -> AssistantState:
     question = state.get("question", "")
+    # On récupère l'historique existant ou on crée une nouvelle liste
+    history = list(state.get("history", [])) 
+    previous_analysis = state.get("request_analysis", None)
     errors = state.get("errors", []).copy()
-    analysis, extraction_error = _extract_request_with_llama(question)
-    if extraction_error:
-        errors.append(extraction_error)
+    
+    try:
+        analysis, extraction_error = _extract_request_with_llama(question, history)
+        if extraction_error:
+            errors.append(extraction_error)
+        
+        # On passe previous_analysis pour permettre la fusion des paramètres
+        analysis = _normalize_request_analysis(analysis, question, previous_analysis)
+    except Exception as e:
+        errors.append(str(e))
+        # Retourne une analyse vide/minimale pour ne pas crasher le graphe
+        analysis = {"intent": "GET", "entity": "", "extracted_params": {}, "confidence": 0.0}
+
+    history.append({"role": "user", "content": question})
 
     return {
-        "intent": str(analysis.get("intent", "GET")),
-        "domain": str(analysis.get("domain", "general")),
         "request_analysis": analysis,
-        "extracted_params": dict(analysis.get("extracted_params", {})),
+        "extracted_params": analysis.get("extracted_params", {}),
+        "history": history,
         "errors": errors,
     }
 
@@ -1479,18 +1711,31 @@ def route_endpoint(state: AssistantState) -> AssistantState:
     question = state.get("question", "")
     analysis = state.get("request_analysis", {})
     errors = state.get("errors", []).copy()
+    router_mode = os.getenv("ERP_ROUTER_MODE", "columns").strip().lower()
+    
     if not candidates:
         errors.append("No endpoint candidate matched the question.")
+        return {"selected_endpoints": [], "extracted_params": {}, "errors": errors}
 
-    selected_endpoints, routed_params, router_error = _route_request_with_deepseek(
-        question=question,
-        analysis=analysis,
-        candidates=candidates,
-    )
-    if router_error:
-        errors.append(router_error)
-
-    selected = selected_endpoints[0] if selected_endpoints else (candidates[0] if candidates else None)
+    try:
+        if router_mode == "columns":
+            params = column_router.collect_routing_params(analysis)
+            selected_endpoints, _ = column_router.route_by_columns(candidates, params)
+            routed_params = dict(analysis.get("extracted_params", {}))
+        else:
+            selected_endpoints, routed_params, router_error = _route_request_with_deepseek_resilient(
+                question=question,
+                analysis=analysis,
+                candidates=candidates,
+            )
+            if router_error:
+                errors.append(router_error)
+    except Exception as e:
+        errors.append(f"Routing failed: {str(e)}")
+        # Ne pas forcer candidates[0] car cela retourne souvent GetAllArticles par erreur
+        selected_endpoints = []
+        routed_params = dict(analysis.get("extracted_params", {})) # Conserver les params extraits par Llama
+    selected = selected_endpoints[0] if selected_endpoints else None
 
     return {
         "selected_endpoints": selected_endpoints,
@@ -1500,10 +1745,144 @@ def route_endpoint(state: AssistantState) -> AssistantState:
     }
 
 
+def generate_transform_plan(state: AssistantState) -> AssistantState:
+    """
+    NÅ“ud dÃ©diÃ© pour DeepSeek Code.
+    GÃ©nÃ¨re le plan d'action JSON APRÃˆS rÃ©cupÃ©ration rÃ©elle des donnÃ©es API.
+    S'il timeout, retourne un plan par dÃ©faut sans crash le graphe.
+    """
+    question = state.get("question", "")
+    analysis = state.get("request_analysis", {})
+    extracted_params = state.get("extracted_params", {})
+    requested_fields = _unique_strings(analysis.get("requested_fields", []))
+    api_result_path = state.get("api_result_path", "")
+    selected_endpoints = state.get("selected_endpoints", [])
+    errors = state.get("errors", []).copy()
+
+    empty_plan = {"steps": []}
+    transform_error = None
+
+    if not state.get("selected_endpoints"):
+        _persist_transform_plan_result(
+            question=question,
+            plan=empty_plan,
+            request_analysis=analysis,
+            extracted_params=extracted_params,
+            selected_endpoints=selected_endpoints,
+            errors=errors,
+        )
+        return {"transform_plan": empty_plan}
+
+    if not api_result_path:
+        errors.append("Cannot build transform plan: missing api_result_path.")
+        _persist_transform_plan_result(
+            question=question,
+            plan=empty_plan,
+            request_analysis=analysis,
+            extracted_params=extracted_params,
+            selected_endpoints=selected_endpoints,
+            errors=errors,
+        )
+        return {"transform_plan": empty_plan, "errors": errors}
+
+    try:
+        payload = json.loads(Path(api_result_path).read_text(encoding="utf-8"))
+        flattened_rows = _flatten_api_records(payload.get("data", []))
+        api_result_context = _build_api_result_context(flattened_rows)
+        # Optionally build the transform plan locally (skip LLM) when configured
+        use_local_transform = os.getenv("ERP_LOCAL_TRANSFORM", "1") == "1" # Par défaut: local (DataFrame)
+        if use_local_transform:
+            local_steps: List[Dict[str, Any]] = []
+
+            # 1) Filters inferred from extracted_params
+            filter_conditions = _extract_filter_conditions_from_extracted_params(extracted_params)
+            if filter_conditions:
+                local_steps.append({"op": "filter_rows", "conditions": filter_conditions})
+
+            # 2) Aggregate if requested
+            aggs = extracted_params.get("aggregations") or extracted_params.get("aggs") or extracted_params.get("metrics")
+            group_by = extracted_params.get("group_by") or extracted_params.get("groupby") or []
+            normalized_aggs: List[Dict[str, Any]] = []
+            if aggs:
+                if isinstance(aggs, dict):
+                    for alias, expr in aggs.items():
+                        m = re.match(r"\s*(sum|avg|mean|count|min|max)\s*\(?\s*([a-zA-Z0-9_]+)\s*\)?\s*", str(expr), re.I)
+                        if m:
+                            normalized_aggs.append({"field": m.group(2), "agg": m.group(1).lower(), "as": alias})
+                elif isinstance(aggs, list):
+                    for item in aggs:
+                        if isinstance(item, dict) and item.get("field"):
+                            normalized_aggs.append(
+                                {
+                                    "field": item.get("field"),
+                                    "agg": str(item.get("agg", item.get("function", "sum"))).lower(),
+                                    "as": item.get("as"),
+                                }
+                            )
+                        elif isinstance(item, str):
+                            m = re.match(r"\s*(sum|avg|mean|count|min|max)\s*\(?\s*([a-zA-Z0-9_]+)\s*\)?\s*(?:as\s+([a-zA-Z0-9_]+))?\s*", item, re.I)
+                            if m:
+                                normalized_aggs.append({"field": m.group(2), "agg": m.group(1).lower(), "as": m.group(3) or None})
+            if normalized_aggs:
+                agg_step: Dict[str, Any] = {
+                    "op": "aggregate",
+                    "groupby": group_by if isinstance(group_by, list) else ([group_by] if group_by else []),
+                    "aggs": normalized_aggs,
+                }
+                local_steps.append(agg_step)
+
+            # 3) Display columns
+            if requested_fields:
+                local_steps.append({"op": "select", "columns": requested_fields})
+
+            # 4) Limit for readability
+            local_steps.append({"op": "limit", "value": 100})
+
+            transform_plan = {"steps": local_steps}
+        else: # Sinon, on utilise le LLM pour gÃ©nÃ©rer le plan
+            transform_plan, transform_error = _build_transform_plan_with_llama(
+                question, analysis, extracted_params, api_result_context
+            )
+        if transform_error:
+            errors.append(transform_error)
+        # Optionally persist the transform plan to disk. Set ERP_PERSIST_TRANSFORM=0 to disable.
+        if os.getenv("ERP_PERSIST_TRANSFORM", "1") != "0":
+            _persist_transform_plan_result(
+                question=question,
+                plan=transform_plan,
+                request_analysis=analysis,
+                extracted_params=extracted_params,
+                selected_endpoints=selected_endpoints,
+                errors=errors,
+            )
+    except Exception as e:
+        # Si transform timeout, on continue avec un plan simple (limit)
+        # Le frontend affiche les donnÃ©es brutes + chart, pas de message d'erreur bloquant
+        transform_plan = {"steps": [{"op": "limit", "value": 20}]}
+        error_msg = str(e)
+        if "timeout" in error_msg.lower():
+            # Log but don't block - user still gets data + chart
+            print(f"[WARN] DeepSeek transform timeout (non-blocking): {error_msg}")
+        else:
+            errors.append(f"Transform generation issue: {e}")
+        if os.getenv("ERP_PERSIST_TRANSFORM", "1") != "0":
+            _persist_transform_plan_result(
+                question=question,
+                plan=transform_plan,
+                request_analysis=analysis,
+                extracted_params=extracted_params,
+                selected_endpoints=selected_endpoints,
+                errors=errors,
+            )
+
+    return {"transform_plan": transform_plan, "errors": errors}
+
+
 def call_webapi(state: AssistantState) -> AssistantState:
     selected = state.get("selected_endpoint")
     selected_endpoints = state.get("selected_endpoints", [])
     params = state.get("extracted_params", {})
+    analysis = state.get("request_analysis", {})
     errors = state.get("errors", []).copy()
 
     if not selected_endpoints and selected:
@@ -1513,6 +1892,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
         errors.append("Cannot execute WebApi: no endpoint selected.")
         payload = {
             "generatedAt": datetime.now(UTC).isoformat(),
+            "requestAnalysis": analysis,
             "endpoints": [],
             "params": params,
             "calls": [],
@@ -1527,6 +1907,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
         errors.append("Missing ERP_API_BASE_URL environment variable.")
         payload = {
             "generatedAt": datetime.now(UTC).isoformat(),
+            "requestAnalysis": analysis,
             "endpoints": [ep.get("id") for ep in selected_endpoints],
             "params": params,
             "calls": [],
@@ -1536,21 +1917,20 @@ def call_webapi(state: AssistantState) -> AssistantState:
         path.write_text(_safe_json_dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return {"api_result_path": str(path), "errors": errors}
 
-    overrides = _load_endpoint_overrides()
-    swagger_paths = _fetch_swagger_paths_with_methods(base_urls)
+    # Swagger paths sera vide car on ne charge plus swagger
+    swagger_paths: Dict[str, List[str]] = {} 
     headers: Dict[str, str] = {}
-    bearer = os.getenv("ERP_API_BEARER_TOKEN", "").strip()
+    bearer = _ensure_bearer_token(base_urls, errors)
     if bearer:
         headers["Authorization"] = f"Bearer {bearer}"
+    else:
+        errors.append("WARNING: ERP_API_BEARER_TOKEN is not set. API calls will likely fail with 401.")
 
     call_results: List[Dict[str, Any]] = []
     merged_data: List[Dict[str, Any]] = []
 
     for endpoint in selected_endpoints:
         endpoint_url = _build_endpoint_url(endpoint.get("url", ""), params)
-        override_path = overrides.get(str(endpoint.get("id", "")))
-        if override_path:
-            endpoint_url = _build_endpoint_url(override_path, params)
 
         request_parts = _collect_request_parts(endpoint, params)
         missing_required = request_parts["missing_required"]
@@ -1606,6 +1986,11 @@ def call_webapi(state: AssistantState) -> AssistantState:
         for full_url in candidate_urls:
             try:
                 response = requests.get(full_url, headers=headers, timeout=60)
+                if response.status_code == 401:
+                    refreshed = _ensure_bearer_token(base_urls, errors)
+                    if refreshed:
+                        headers["Authorization"] = f"Bearer {refreshed}"
+                        response = requests.get(full_url, headers=headers, timeout=60)
                 response.raise_for_status()
                 content_type = response.headers.get("Content-Type", "").lower()
                 if "json" in content_type:
@@ -1649,6 +2034,7 @@ def call_webapi(state: AssistantState) -> AssistantState:
 
     payload: Dict[str, Any] = {
         "generatedAt": datetime.now(UTC).isoformat(),
+        "requestAnalysis": analysis,
         "endpoints": [ep.get("id") for ep in selected_endpoints],
         "params": params,
         "calls": call_results,
@@ -1664,15 +2050,12 @@ def call_webapi(state: AssistantState) -> AssistantState:
 def evidence_filter(state: AssistantState) -> AssistantState:
     path_str = state.get("api_result_path", "")
     selected_endpoints = state.get("selected_endpoints", [])
-    question = state.get("question", "")
-    table_hint = _infer_dataset_table(state.get("question", ""), selected_endpoints)
-    schema_hint = _build_schema_hint(table_hint)
+    transform_plan = state.get("transform_plan", {"steps": []})
     errors = state.get("errors", []).copy()
 
     if not path_str:
         return {
             "filtered_result": {"records": [], "count": 0},
-            "schema_hint": schema_hint,
             "confidence": 0.0,
         }
 
@@ -1680,18 +2063,14 @@ def evidence_filter(state: AssistantState) -> AssistantState:
     if (not path.exists()) or (not path.is_file()):
         return {
             "filtered_result": {"records": [], "count": 0},
-            "schema_hint": schema_hint,
             "confidence": 0.0,
         }
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     records = payload.get("data", [])
-    requested_fields = _infer_requested_fields(state.get("question", ""), table_hint)
     flattened_rows = _flatten_api_records(records)
-    transform_plan, transform_error = _build_transform_plan(question, requested_fields, schema_hint)
-    _persist_transform_plan(question, transform_plan)
-    if transform_error:
-        errors.append(transform_error)
+
+    # Ici on applique les opÃ©rations Pandas via le plan gÃ©nÃ©rÃ© par DeepSeek
 
     transformed_rows = _apply_transform_plan(flattened_rows, transform_plan)
     filtered = transformed_rows
@@ -1708,96 +2087,87 @@ def evidence_filter(state: AssistantState) -> AssistantState:
             "count": len(display_rows),
             "by_endpoint": by_endpoint,
         },
-        "transform_plan": transform_plan,
-        "schema_hint": _build_schema_hint(table_hint),
-        "confidence": 0.6 if filtered else 0.2,
+        "confidence": 0.8 if filtered else 0.2,
         "errors": errors,
     }
 
 
 def answer_generation(state: AssistantState) -> AssistantState:
     question = state.get("question", "")
-    selected = state.get("selected_endpoint")
     selected_endpoints = state.get("selected_endpoints", [])
     filtered = state.get("filtered_result", {})
-    schema_hint = state.get("schema_hint", {})
-    compact_evidence = _build_answer_evidence(filtered)
-
-    use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
-    model = os.getenv("OLLAMA_MODEL_ANSWER", "llama3.2:latest")
     records = filtered.get("records", [])
 
-    def build_fallback_answer() -> str:
-        endpoint_ids = [str(ep.get("id")) for ep in selected_endpoints] if selected_endpoints else []
+    def build_data_status_answer() -> str:
         if records:
-            return (
-                f"J'ai trouvé {filtered.get('count', 0)} enregistrements utiles "
-                f"via {', '.join(endpoint_ids) if endpoint_ids else 'les endpoints sélectionnés'}. "
-                "La réponse détaillée Ollama n'est pas disponible, mais les données filtrées sont affichées."
-            )
+            return f"{filtered.get('count', 0)} lignes chargees."
         if state.get("errors"):
-            return (
-                "Je n'ai pas pu produire une réponse complète. "
-                "Les erreurs d'appel API ou de génération sont affichées, et vous pouvez vérifier les endpoints sélectionnés."
-            )
-        return (
-            "Je n'ai pas trouvé de données suffisantes pour répondre à cette question avec certitude."
-        )
+            return "Aucune donnee chargee."
+        return "Aucune donnee trouvee."
 
-    if use_ollama:
+    answer = build_data_status_answer()
+
+    if os.getenv("ERP_GENERATE_TEXT_ANSWER", "0") == "1":
+        selected = state.get("selected_endpoint")
+        compact_evidence = _build_answer_evidence(filtered)
+        mapping_context = _build_mapping_context(question=question, max_tables=4, max_columns=6)
+        model = os.getenv("OLLAMA_MODEL_ANSWER", "llama3.2")
         system_prompt = (
             "You are an ERP support assistant. "
             "Answer only from provided evidence. "
-            "Do not expose excessive internal data. "
-            "Summarize only the information useful for the client. "
-            "If evidence is missing, say what is missing. "
-            "Use the provided schema hint to understand likely columns and business meaning before answering."
+            "Keep the answer short and never describe unavailable data."
         )
         user_prompt = (
             f"Question: {question}\n"
             f"Primary endpoint: {selected}\n"
             f"Selected endpoints: {json.dumps(selected_endpoints, ensure_ascii=False)}\n"
-            f"Schema hint: {json.dumps(schema_hint, ensure_ascii=False)}\n"
+            f"Business mapping context: {json.dumps(mapping_context, ensure_ascii=False)}\n"
             f"Evidence: {json.dumps(compact_evidence, ensure_ascii=False)}"
         )
         try:
             answer = _call_ollama_chat(model, system_prompt, user_prompt)
         except Exception as exc:
+            history = list(state.get("history", []))
             errors = state.get("errors", []).copy()
-            errors.append(f"Ollama error: {exc}")
-            answer = build_fallback_answer()
+            errors.append(f"Ollama answer error: {exc}")
+            
+            history.append({"role": "assistant", "content": answer})
+            
             display_payload = _persist_display_result(
                 question=question,
                 selected_endpoints=selected_endpoints,
                 filtered_result=filtered,
                 answer=answer,
                 errors=errors,
-                schema_hint=schema_hint,
                 extracted_params=state.get("extracted_params", {}),
+                request_analysis=state.get("request_analysis", {}),
             )
             return {
                 "answer": answer,
                 "errors": errors,
                 "display_result_path": str(DISPLAY_RESULT_PATH),
                 "display_result": display_payload,
+                "history": history
             }
-    else:
-        answer = build_fallback_answer()
+
+    history = list(state.get("history", []))
+    history.append({"role": "assistant", "content": answer})
+
     display_payload = _persist_display_result(
         question=question,
         selected_endpoints=selected_endpoints,
         filtered_result=filtered,
         answer=answer,
         errors=state.get("errors", []),
-        schema_hint=schema_hint,
         extracted_params=state.get("extracted_params", {}),
+        request_analysis=state.get("request_analysis", {}),
     )
     return {
         "answer": answer,
+        "history": history,
         "display_result_path": str(DISPLAY_RESULT_PATH),
         "display_result": display_payload,
     }
-
 
 def answer_validation(state: AssistantState) -> AssistantState:
     answer = state.get("answer", "")
@@ -1818,6 +2188,7 @@ def build_graph():
     graph.add_node("extract_user_request", extract_user_request)
     graph.add_node("retrieve_candidate_endpoints", retrieve_candidate_endpoints)
     graph.add_node("route_endpoint", route_endpoint)
+    graph.add_node("generate_transform_plan", generate_transform_plan)
     graph.add_node("call_webapi", call_webapi)
     graph.add_node("evidence_filter", evidence_filter)
     graph.add_node("answer_generation", answer_generation)
@@ -1827,22 +2198,185 @@ def build_graph():
     graph.add_edge("extract_user_request", "retrieve_candidate_endpoints")
     graph.add_edge("retrieve_candidate_endpoints", "route_endpoint")
     graph.add_edge("route_endpoint", "call_webapi")
-    graph.add_edge("call_webapi", "evidence_filter")
+    graph.add_edge("call_webapi", "generate_transform_plan")
+    graph.add_edge("generate_transform_plan", "evidence_filter")
     graph.add_edge("evidence_filter", "answer_generation")
     graph.add_edge("answer_generation", "answer_validation")
     graph.add_edge("answer_validation", END)
 
-    return graph.compile()
+    return graph.compile(checkpointer=MemorySaver())
 
+
+@lru_cache(maxsize=1)
+def _get_compiled_app():
+    # One app instance per process so MemorySaver can retain state by thread_id.
+    return build_graph()
+
+
+_APP_LOCK = threading.Lock()
+
+
+def run_session(question: str, thread_id: str = "default") -> AssistantState:
+    app = _get_compiled_app()
+    config = {"configurable": {"thread_id": thread_id}}
+
+    inputs = {"question": question, "errors": []}
+    # MemorySaver lives in-process; guard invoke to reduce race risks under ThreadingHTTPServer.
+    with _APP_LOCK:
+        result = app.invoke(inputs, config=config)
+    return result
 
 def run_once(question: str) -> AssistantState:
-    app = build_graph()
-    result = app.invoke({"question": question, "errors": []})
-    return result
+    return run_session(question)
 
 
 class AssistantRequestHandler(BaseHTTPRequestHandler):
     server_version = "ERPAssistantHTTP/1.0"
+
+    def _send_bytes(self, body: bytes, content_type: str, status: int = HTTPStatus.OK) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _render_seaborn_png(self, records: List[Dict[str, Any]]) -> bytes:
+        """Render a simple Seaborn chart from tabular records.
+
+        Heuristics:
+        - categorical + numeric -> barplot (sum)
+        - numeric only -> histplot
+        - categorical only -> countplot
+        """
+        if not isinstance(records, list) or not records:
+            raise ValueError("No records to plot")
+
+        try:
+            import matplotlib
+
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            import numpy as np
+            import pandas as pd
+            import seaborn as sns
+        except Exception as exc:
+            raise RuntimeError(
+                "Seaborn dependencies not installed. Install seaborn/matplotlib/pandas."
+            ) from exc
+
+        df = pd.DataFrame([row for row in records if isinstance(row, dict)])
+        if df.empty:
+            raise ValueError("No tabular rows available")
+
+        df = df.copy()
+        df = df.replace({"": None})
+
+        def is_numeric_series(series: "pd.Series") -> bool:
+            if series.dtype.kind in "biufc":
+                return True
+            coerced = pd.to_numeric(series, errors="coerce")
+            return coerced.notna().sum() >= max(1, int(len(series) * 0.6))
+
+        numeric_cols: List[str] = []
+        categorical_cols: List[str] = []
+
+        for col in df.columns:
+            if col.startswith("_"):
+                continue
+            s = df[col]
+            if is_numeric_series(s):
+                numeric_cols.append(col)
+            else:
+                # Keep short-ish strings / bool as categorical
+                if s.dropna().astype(str).map(len).mean() if len(s.dropna()) else 0 < 60:
+                    categorical_cols.append(col)
+
+        sns.set_theme(style="whitegrid")
+        fig, ax = plt.subplots(figsize=(10, 4.5), dpi=140)
+
+        title = "Seaborn"
+
+        if categorical_cols and numeric_cols:
+            # Pick the most usable columns (most non-null values)
+            cat_ranked = sorted(
+                categorical_cols,
+                key=lambda c: int(df[c].notna().sum()),
+                reverse=True,
+            )
+            num_ranked = sorted(
+                numeric_cols,
+                key=lambda c: int(pd.to_numeric(df[c], errors="coerce").notna().sum()),
+                reverse=True,
+            )
+
+            plotted = False
+            for x in cat_ranked:
+                for y in num_ranked:
+                    df[y] = pd.to_numeric(df[y], errors="coerce")
+                    df2 = df[[x, y]].dropna()
+                    if df2.empty:
+                        continue
+
+                    top = df2[x].astype(str).value_counts().head(10).index.tolist()
+                    df2 = df2[df2[x].astype(str).isin(top)]
+                    if df2.empty:
+                        continue
+
+                    sns.barplot(data=df2, x=x, y=y, estimator=np.sum, errorbar=None, ax=ax)
+                    ax.set_xlabel(x)
+                    ax.set_ylabel(y)
+                    ax.tick_params(axis="x", rotation=25)
+                    title = f"Somme de {y} par {x}"
+                    plotted = True
+                    break
+                if plotted:
+                    break
+
+            if not plotted:
+                # Fallback to numeric-only plot
+                col = num_ranked[0]
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                df2 = df[[col]].dropna()
+                if df2.empty:
+                    raise ValueError("No non-null data for plotting")
+                sns.histplot(data=df2, x=col, kde=True, ax=ax)
+                ax.set_xlabel(col)
+                ax.set_ylabel("count")
+                title = f"Distribution de {col}"
+
+        elif numeric_cols:
+            col = numeric_cols[0]
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df2 = df[[col]].dropna()
+            if df2.empty:
+                raise ValueError("No numeric data for plotting")
+            sns.histplot(data=df2, x=col, kde=True, ax=ax)
+            ax.set_xlabel(col)
+            ax.set_ylabel("count")
+            title = f"Distribution de {col}"
+
+        elif categorical_cols:
+            col = categorical_cols[0]
+            df2 = df[[col]].dropna()
+            if df2.empty:
+                raise ValueError("No categorical data for plotting")
+            top = df2[col].astype(str).value_counts().head(10).index.tolist()
+            df2 = df2[df2[col].astype(str).isin(top)]
+            sns.countplot(data=df2, x=col, ax=ax)
+            ax.set_xlabel(col)
+            ax.set_ylabel("count")
+            ax.tick_params(axis="x", rotation=25)
+            title = f"Répartition de {col}"
+        else:
+            raise ValueError("No suitable columns to plot")
+
+        ax.set_title(title)
+        fig.tight_layout()
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png")
+        plt.close(fig)
+        return buf.getvalue()
 
     def _send_json(self, payload: Dict[str, Any], status: int = HTTPStatus.OK) -> None:
         body = _safe_json_dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -1853,11 +2387,14 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        path_only = parsed.path
+
         if self.path == "/health":
             self._send_json({"status": "ok"})
             return
 
-        if self.path == "/assistant/last-result":
+        if path_only == "/assistant/last-result":
             if DISPLAY_RESULT_PATH.exists() and DISPLAY_RESULT_PATH.is_file():
                 try:
                     payload = json.loads(DISPLAY_RESULT_PATH.read_text(encoding="utf-8"))
@@ -1870,9 +2407,96 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "No display result available yet"}, status=HTTPStatus.NOT_FOUND)
             return
 
+        if path_only == "/assistant/seaborn.png":
+            if not DISPLAY_RESULT_PATH.exists() or not DISPLAY_RESULT_PATH.is_file():
+                self._send_json({"error": "No display result available yet"}, status=HTTPStatus.NOT_FOUND)
+                return
+
+            try:
+                payload = json.loads(DISPLAY_RESULT_PATH.read_text(encoding="utf-8"))
+                records = payload.get("display", {}).get("records", [])
+                if not isinstance(records, list):
+                    raise ValueError("Invalid records")
+                image = self._render_seaborn_png(records)
+                self._send_bytes(image, "image/png", status=HTTPStatus.OK)
+                return
+            except Exception as exc:
+                self._send_json(
+                    {"error": "Seaborn render failed", "details": str(exc)},
+                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+
         self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
+        # Support direct transform application: accepts raw data + extracted_params or plan
+        if self.path == "/assistant/apply-transform":
+            content_length = int(self.headers.get("Content-Length", "0"))
+            raw_body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                payload = json.loads(raw_body.decode("utf-8"))
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON body"}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            data = payload.get("data", [])
+            extracted_params = payload.get("extracted_params", {}) or {}
+            requested_fields = payload.get("requested_fields", []) or []
+            plan = payload.get("plan")
+
+            # If no explicit plan, build a simple local plan from extracted_params/requested_fields
+            if not plan:
+                local_steps: List[Dict[str, Any]] = []
+                filter_conditions: List[Dict[str, Any]] = []
+                for k, v in extracted_params.items():
+                    if k in {"requested_fields", "aggregations", "group_by", "groupby", "metrics"}:
+                        continue
+                    if v is None:
+                        continue
+                    filter_conditions.append({"field": str(k), "operator": "equals", "value": v})
+                if filter_conditions:
+                    local_steps.append({"op": "filter_rows", "conditions": filter_conditions})
+                if requested_fields:
+                    local_steps.append({"op": "select", "columns": requested_fields})
+                aggs = extracted_params.get("aggregations") or extracted_params.get("metrics")
+                group_by = extracted_params.get("group_by") or extracted_params.get("groupby")
+                normalized_aggs: List[Dict[str, Any]] = []
+                if aggs:
+                    if isinstance(aggs, dict):
+                        for alias, expr in aggs.items():
+                            m = re.match(r"\s*(sum|avg|mean|count|min|max)\s*\(?\s*([a-zA-Z0-9_]+)\s*\)?\s*", str(expr), re.I)
+                            if m:
+                                normalized_aggs.append({"field": m.group(2), "agg": m.group(1).lower(), "as": alias})
+                    elif isinstance(aggs, list):
+                        for item in aggs:
+                            if isinstance(item, dict) and item.get("field"):
+                                normalized_aggs.append({"field": item.get("field"), "agg": item.get("agg", "sum"), "as": item.get("as")})
+                            elif isinstance(item, str):
+                                m = re.match(r"\s*(sum|avg|mean|count|min|max)\s*\(?\s*([a-zA-Z0-9_]+)\s*\)?\s*", item, re.I)
+                                if m:
+                                    normalized_aggs.append({"field": m.group(2), "agg": m.group(1).lower(), "as": None})
+                if normalized_aggs:
+                    agg_step: Dict[str, Any] = {"op": "aggregate", "groupby": group_by if isinstance(group_by, list) else ([group_by] if group_by else []), "aggs": normalized_aggs}
+                    local_steps.append(agg_step)
+                local_steps.append({"op": "limit", "value": int(payload.get("limit", 100))})
+                plan = {"steps": local_steps}
+
+            try:
+                # detect pandas availability for debugging
+                try:
+                    import pandas as _pd
+                    pandas_available = True
+                except Exception:
+                    pandas_available = False
+                # apply transform (pandas preferred)
+                transformed = _apply_transform_plan(data, plan)
+                resp = {"records": transformed, "count": len(transformed), "plan": plan, "pandas_available": pandas_available}
+                self._send_json(resp)
+            except Exception as exc:
+                self._send_json({"error": "Transform failed", "details": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
+
         if self.path != "/assistant/query":
             self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
             return
@@ -1891,8 +2515,13 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Question is required"}, status=HTTPStatus.BAD_REQUEST)
             return
 
+        thread_id = str(payload.get("thread_id") or payload.get("thread") or payload.get("session_id") or "default").strip() or "default"
+
         try:
-            result = run_once(question)
+            result = run_session(question, thread_id=thread_id)
+            # Echo thread_id for UI convenience
+            if isinstance(result, dict):
+                result = {**result, "thread_id": thread_id}
             self._send_json(result)
         except Exception as exc:
             self._send_json(
@@ -1918,7 +2547,7 @@ if __name__ == "__main__":
     parser.add_argument("--serve", action="store_true", help="Run the assistant as an HTTP server")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=int(os.getenv("ERP_ASSISTANT_PORT", "8000")))
-    parser.add_argument("--question", default="Quels sont mes clients de Paris ?")
+    parser.add_argument("--question", default="Quels sont mes clients ?")
     args = parser.parse_args()
 
     if args.serve:

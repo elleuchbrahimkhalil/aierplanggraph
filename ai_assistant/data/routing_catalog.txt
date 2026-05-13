@@ -1,0 +1,31 @@
+ROUTING CATALOG TEXT
+Use this catalog to choose the best GET endpoint_id.
+Prefer exact URI, method, role, query parameters, route parameters, and short description.
+Do not depend on examples.
+
+- webapi_get_api_b2b_intermediate_get_all_articles | GET /api/B2b_intermediate/GetAllArticles | role=stock | route=- | query=- | desc=Retourne la liste des articles B2B.
+- webapi_get_api_bon_entree_get_list | GET /api/BonEntree/GetList | role=general | route=- | query=- | desc=Retourne la liste des bons d'entree en stock.
+- webapi_get_api_bon_transfert | GET /api/BonTransfert | role=general | route=- | query=- | desc=Retourne la liste des bons de transfert.
+- webapi_get_api_bon_transfert_getall_depo | GET /api/BonTransfert/GETAllDepo | role=general | route=- | query=- | desc=Retourne la liste des depots (referentiel transfert).
+- webapi_get_api_bon_transfert_get_all_articles | GET /api/BonTransfert/GetAllArticles | role=stock | route=- | query=- | desc=Retourne la liste des articles (referentiel transfert).
+- webapi_get_api_bon_transfert_get_all_lots | GET /api/BonTransfert/GetAllLots | role=general | route=- | query=codeArticle | desc=Retourne des informations sur lots avec critere de recherche.
+- webapi_get_api_stock_depot_get_all_famille | GET /api/StockDepot/GetAllFamille | role=stock | route=- | query=- | desc=Retourne la liste des familles d'articles.
+- webapi_get_api_stock_depot_get_all_famille_p | GET /api/StockDepot/GetAllFamilleP | role=stock | route=- | query=- | desc=Retourne la liste des familles parentes d'articles.
+- webapi_get_api_stock_depot_get_all_lot | GET /api/StockDepot/GetAllLot | role=stock | route=- | query=- | desc=Retourne la liste des lots en stock.
+- webapi_get_api_commande_client_get_all_clients | GET /api/CommandeClient/GetAllClients | role=commercial | route=- | query=- | desc=Retourne la liste des clients (referentiel commandes).
+- webapi_get_api_fournisseur | GET /api/Fournisseur | role=achat | route=- | query=- | desc=Retourne la liste des fournisseurs.
+- webapi_get_api_demande_conge_get_all | GET /api/DemandeConge/GetAll | role=rh | route=- | query=- | desc=Retourne la liste des demandes de conge.
+- webapi_get_api_demande_conge_get_all_employes | GET /api/DemandeConge/GetAllEmployes | role=rh | route=- | query=- | desc=Retourne la liste des employes (referentiel conges).
+- webapi_get_api_paiements_get_all_clients | GET /api/Paiements/GetAllClients | role=commercial | route=- | query=- | desc=Retourne la liste des clients (referentiel paiements).
+- webapi_get_api_paiements_get_all_etats | GET /api/Paiements/GetAllEtats | role=finance | route=- | query=- | desc=Retourne la liste des etats des paiements.
+- webapi_get_api_paiements_get_all_frs | GET /api/Paiements/GetAllFrs | role=finance | route=- | query=- | desc=Retourne la liste des fournisseurs (referentiel paiements).
+- webapi_get_api_bl_frs_get_list | GET /api/BlFrs/GetList | role=achat | route=- | query=- | desc=Retourne la liste des bons de livraison fournisseurs.
+- webapi_get_api_bon_transfert_demande | GET /api/BonTransfertDemande | role=general | route=- | query=- | desc=Retourne la liste des demandes de transfert.
+- webapi_get_api_bon_transfert_demande_getall_depo | GET /api/BonTransfertDemande/GETAllDepo | role=general | route=- | query=- | desc=Retourne la liste des depots (referentiel demande de transfert).
+- webapi_get_api_bon_transfert_demande_get_all_articles | GET /api/BonTransfertDemande/GetAllArticles | role=stock | route=- | query=- | desc=Retourne la liste des articles (referentiel demande de transfert).
+- webapi_get_api_bl_client_get_all_bl_clients | GET /api/BlClient/GetAllBlClients | role=commercial | route=- | query=- | desc=Retourne la liste des bons de livraison client.
+- webapi_get_api_bl_client_get_all_clients | GET /api/BlClient/GetAllClients | role=commercial | route=- | query=- | desc=Retourne la liste des clients (referentiel BL).
+- webapi_get_api_bl_client_get_all_commandes | GET /api/BlClient/GetAllCommandes | role=commercial | route=- | query=numBlClient | desc=Retourne des informations sur commandes client avec critere de recherche.
+- webapi_get_api_bl_client_get_all_depots | GET /api/BlClient/GetAllDepots | role=commercial | route=- | query=- | desc=Retourne la liste des depots (referentiel BL).
+- webapi_get_api_bl_client_get_all_lots | GET /api/BlClient/GetAllLots | role=commercial | route=- | query=codeArticle | desc=Retourne des informations sur lots avec critere de recherche.
+- webapi_get_api_stats_ventes_par_article | GET /api/Stats/VenteParArticle | role=commercial | route=- | query=- | desc=Retourne les statistiques de ventes par article avec totaux et volumes.

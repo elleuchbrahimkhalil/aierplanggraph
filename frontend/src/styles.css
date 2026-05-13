@@ -51,7 +51,7 @@ body {
 }
 
 .shell {
-  width: min(1100px, 92%);
+  width: min(1400px, 94%);
   margin: 0 auto;
   padding: 40px 0 56px;
   position: relative;
@@ -90,8 +90,12 @@ h1 {
   animation: rise 0.4s ease-out;
 }
 
+.card h2 {
+  letter-spacing: 0.01em;
+}
+
 .ask-card {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .ask-card label {
@@ -113,6 +117,13 @@ input {
   padding: 12px;
   font: inherit;
   background: #fff;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+input:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 button {
@@ -124,6 +135,16 @@ button {
   cursor: pointer;
   background: linear-gradient(135deg, var(--accent), #115e59);
   color: #fff;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 button:disabled {
@@ -138,9 +159,109 @@ button:disabled {
   margin-top: 12px;
 }
 
+/* Split layout: left chat / right results */
+.two-pane {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.left-pane,
+.right-pane {
+  min-width: 0;
+}
+
+.right-pane {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+/* Chat */
+.chat-panel {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-panel-title {
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.chat-history {
+  max-height: 60vh;
+  min-height: 260px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-right: 4px;
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.msg-bubble {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  max-width: 92%;
+  box-shadow: 0 2px 10px rgb(35 35 35 / 6%);
+}
+
+.msg-bubble small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+
+.msg-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msg-bubble.user {
+  border-left: 4px solid var(--accent);
+  justify-self: end;
+}
+
+.msg-bubble.assistant {
+  border-left: 4px solid var(--accent-2);
+  justify-self: start;
+}
+
+.graph-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .chip {
   background: #efe6d3;
   color: #2f332f;
+  border: 1px solid var(--line);
+}
+
+.chip:hover:not(:disabled) {
+  filter: brightness(1.01);
 }
 
 .chip span {
@@ -221,7 +342,7 @@ h2 {
 }
 
 .json-card {
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .table-wrap {
@@ -250,6 +371,7 @@ th {
   position: sticky;
   top: 0;
   background: #f8f3e8;
+  z-index: 1;
 }
 
 .cell-json {
@@ -287,6 +409,10 @@ th {
 }
 
 @media (max-width: 860px) {
+  .two-pane {
+    grid-template-columns: 1fr;
+  }
+
   .grid {
     grid-template-columns: 1fr;
   }
@@ -298,4 +424,67 @@ th {
   .param-item {
     grid-template-columns: 1fr;
   }
+}
+
+/* Charts & Visualizations */
+.charts-card {
+  margin-top: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.2);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.chart-container {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  min-height: 300px;
+}
+
+.chart-container h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chart-container canvas {
+  max-height: 280px;
 }

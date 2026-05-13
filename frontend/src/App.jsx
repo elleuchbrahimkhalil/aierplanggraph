@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import ChartBuilder from './ChartBuilder';
+import ChatInterface from './ChatInterface';
 
 const QUICK_ACTIONS = [
   {
@@ -52,7 +54,7 @@ function formatCellValue(value) {
 
 function collectColumns(rows) {
   const seen = [];
-  for (const row of rows.slice(0, 20)) {
+  for (const row of rows) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     for (const key of Object.keys(row)) {
       if (!seen.includes(key)) {
@@ -60,17 +62,36 @@ function collectColumns(rows) {
       }
     }
   }
-  return seen.slice(0, 8);
+  return seen;
 }
 
 export default function App() {
-  const [question, setQuestion] = useState('affiche les clients');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [rows, setRows] = useState([]);
   const [calledEndpoint, setCalledEndpoint] = useState('');
   const [assistantAnswer, setAssistantAnswer] = useState('');
   const [extractedParams, setExtractedParams] = useState({});
+  const [seabornUrl, setSeabornUrl] = useState('');
+  const [messages, setMessages] = useState([]);
+
+  function createMessage(role, content, extra = {}) {
+    return {
+      id: crypto.randomUUID(),
+      role,
+      content,
+      ...extra,
+    };
+  }
+
+  // Persistance du thread_id pour la session
+  const threadId = useMemo(() => {
+    const saved = sessionStorage.getItem('erp_thread_id');
+    if (saved) return saved;
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem('erp_thread_id', newId);
+    return newId;
+  }, []);
 
   const summary = useMemo(() => {
     if (!rows.length) return 'Aucune donnée chargée.';
@@ -78,25 +99,31 @@ export default function App() {
   }, [rows]);
 
   const columns = useMemo(() => collectColumns(rows), [rows]);
-  const visibleRows = useMemo(() => rows.slice(0, 12), [rows]);
-  const jsonPreview = useMemo(() => JSON.stringify(visibleRows, null, 2), [visibleRows]);
+  const visibleRows = useMemo(() => rows, [rows]);
+  const jsonPreview = useMemo(() => JSON.stringify(rows, null, 2), [rows]);
   const extractedParamEntries = useMemo(() => Object.entries(extractedParams || {}), [extractedParams]);
 
-  async function runAssistant(customAction) {
+  async function runAssistant(askedQuestion) {
     setLoading(true);
     setError('');
     setRows([]);
     setAssistantAnswer('');
     setExtractedParams({});
+    setSeabornUrl('');
 
     try {
-      const askedQuestion = customAction?.query || question;
+      // Ajout immédiat du message utilisateur à l'UI (optimistic).
+      setMessages((prev) => [...prev, createMessage('user', askedQuestion)]);
+
       const response = await fetch('/assistant/query', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: askedQuestion }),
+        body: JSON.stringify({ 
+          question: askedQuestion,
+          thread_id: threadId 
+        }),
       });
 
       if (!response.ok) {
@@ -136,15 +163,43 @@ export default function App() {
       setCalledEndpoint(
         displayEndpoints.join(' | ') || selectedEndpoints.join(' | ') || 'Aucun endpoint sélectionné'
       );
+
+      const nextGraphUrl = normalizedRows.length ? `/assistant/seaborn.png?ts=${Date.now()}` : '';
+
+      const assistantFromHistory = Array.isArray(payload?.history)
+        ? [...payload.history].reverse().find((m) => m?.role === 'assistant')
+        : null;
+      const assistantText = payload?.answer ?? assistantFromHistory?.content ?? '';
+
+      if (assistantText) {
+        setMessages((prev) => [
+          ...prev,
+          createMessage(
+            'assistant',
+            String(assistantText),
+            nextGraphUrl ? { graphUrl: nextGraphUrl, graphTitle: 'Graph (Seaborn)' } : {}
+          ),
+        ]);
+      }
+
       setAssistantAnswer(displayPayload?.answer || payload?.answer || '');
       setRows(normalizedRows);
       setExtractedParams(resolvedExtractedParams);
+
+      if (nextGraphUrl) {
+        // cache-bust so the browser reloads the latest PNG
+        setSeabornUrl(nextGraphUrl);
+      }
 
       if (visibleErrors.length) {
         setError(visibleErrors.join(' | '));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setMessages((prev) => [
+        ...prev,
+        createMessage('assistant', "Désolé, une erreur est survenue lors de la communication avec l'assistant."),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -165,92 +220,97 @@ export default function App() {
           </p>
         </header>
 
-        <section className="card ask-card">
-          <label htmlFor="question">Question client</label>
-          <div className="ask-row">
-            <input
-              id="question"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ex: affiche les ventes"
-            />
-            <button onClick={() => runAssistant()} disabled={loading}>
-              {loading ? 'Chargement...' : 'Exécuter'}
-            </button>
-          </div>
-          <div className="chips">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                className="chip"
-                key={action.label}
-                onClick={() => {
-                  setQuestion(action.query);
-                  runAssistant(action);
-                }}
-                disabled={loading}
-              >
-                {action.label} <span>{action.hint}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+        <section className="two-pane">
+          <aside className="left-pane">
+            <section className="card ask-card">
+              <p className="params-title">Discussion</p>
 
-        <section className="grid">
-          <article className="card">
-            <h2>État de l’appel</h2>
-            <p>{summary}</p>
-            <p className="mono">Endpoints: {calledEndpoint || '—'}</p>
-            <div className="params-box">
-              <p className="params-title">Paramètres extraits</p>
-              {extractedParamEntries.length ? (
-                <div className="params-grid">
-                  {extractedParamEntries.map(([key, value]) => (
-                    <div className="param-item" key={key}>
-                      <span className="param-key">{key}</span>
-                      <span className="param-value">{formatCellValue(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="params-empty">Aucun paramètre extrait.</p>
-              )}
-            </div>
-            {assistantAnswer ? <p>{assistantAnswer}</p> : null}
-            {error ? <p className="error">Erreur: {error}</p> : null}
-          </article>
+              <ChatInterface
+                messages={
+                  messages.length
+                    ? messages
+                    : [createMessage('assistant', 'Bonjour, posez votre question ERP.')]
+                }
+                loading={loading}
+                onSend={(text) => runAssistant(text)}
+              />
 
-          <article className="card">
-            <h2>Tableau structuré</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    {columns.map((column) => (
-                      <th key={column}>{column}</th>
+              <div className="chips">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    className="chip"
+                    key={action.label}
+                    onClick={() => {
+                      runAssistant(action.query);
+                    }}
+                    disabled={loading}
+                  >
+                    {action.label} <span>{action.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </aside>
+
+          <section className="right-pane">
+            <article className="card">
+              <h2>État de l’appel</h2>
+              <p>{summary}</p>
+              <p className="mono">Endpoints: {calledEndpoint || '—'}</p>
+              <div className="params-box">
+                <p className="params-title">Paramètres extraits</p>
+                {extractedParamEntries.length ? (
+                  <div className="params-grid">
+                    {extractedParamEntries.map(([key, value]) => (
+                      <div className="param-item" key={key}>
+                        <span className="param-key">{key}</span>
+                        <span className="param-value">{formatCellValue(value)}</span>
+                      </div>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRows.map((row, idx) => (
-                    <tr key={`row-${idx}`}>
-                      <td>{idx + 1}</td>
+                  </div>
+                ) : (
+                  <p className="params-empty">Aucun paramètre extrait.</p>
+                )}
+              </div>
+              {assistantAnswer ? <p>{assistantAnswer}</p> : null}
+              {error ? <p className="error">Erreur: {error}</p> : null}
+            </article>
+
+            <article className="card">
+              <h2>Tableau structuré</h2>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
                       {columns.map((column) => (
-                        <td className="cell-json" key={`${column}-${idx}`}>
-                          {formatCellValue(row?.[column])}
-                        </td>
+                        <th key={column}>{column}</th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((row, idx) => (
+                      <tr key={`row-${idx}`}>
+                        <td>{idx + 1}</td>
+                        {columns.map((column) => (
+                          <td className="cell-json" key={`${column}-${idx}`}>
+                            {formatCellValue(row?.[column])}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
 
-        <section className="card json-card">
-          <h2>Retour JSON</h2>
-          <pre className="json-preview">{jsonPreview}</pre>
+            <ChartBuilder rows={rows} seabornUrl={seabornUrl} />
+
+            <section className="card json-card">
+              <h2>Retour JSON</h2>
+              <pre className="json-preview">{jsonPreview}</pre>
+            </section>
+          </section>
         </section>
       </main>
     </div>

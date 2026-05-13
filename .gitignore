@@ -32,6 +32,27 @@ build/
 ### VS Code ###
 .vscode/
 
+### Node / frontend ###
+**/node_modules/
+**/dist/
+**/.vite/
+
+### Python ###
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+
+### Local caches / history ###
+.history/
+ai_assistant/data/cache/
+ai_assistant/data/cache/*.json
+ai_assistant/data/cache/*.png
+ai_assistant/data/cache/*.txt
+
+### Misc ###
+*.log
+
 ### Airflow ###
 .env.airflow
 airflow/logs/

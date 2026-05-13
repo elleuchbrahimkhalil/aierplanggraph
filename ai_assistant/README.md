@@ -1,145 +1,94 @@
-# LangGraph Skeleton (Point 1)
+# ERP AI Assistant (LangGraph + Ollama + Column Router)
 
-This folder contains a runnable LangGraph skeleton for the ERP AI assistant.
+Ce dossier contient l'assistant **Python** orchestré par **LangGraph**.
 
-## What is implemented
-- Graph structure with main nodes:
-  - classify_question
-  - retrieve_candidate_endpoints
-  - select_endpoint_and_params
-  - call_webapi_stub
-  - evidence_filter
-  - answer_generation
-  - answer_validation
-- Local cache output in `ai_assistant/data/cache/last_api_result.json`
-- Optional Ollama integration for final answer generation
+L'objectif: prendre une question métier (client), choisir automatiquement les bonnes routes WebApi, charger les données, appliquer des opérations (filtre / agrégation) via DataFrame, puis renvoyer un JSON exploitable par le frontend (tableau + dashboard Chart.js).
 
-## Run
-From project root:
+## Flow (solution)
 
-1. Activate venv
-2. Run:
+1) **Question client (React)**
+- Le frontend appelle `POST /assistant/query` avec `{ "question": "..." }`.
 
-```
-python ai_assistant/langgraph_skeleton.py
-```
+2) **Extraction (Ollama)**
+- Le nœud `extract_user_request` appelle Ollama et récupère un JSON:
+  - `entity`
+  - `requested_fields` (colonnes à afficher)
+  - `extracted_params` (filtres + `group_by` + `aggregations` + identifiants)
+  - `missing`, `confidence`
 
-## Use your real endpoints.json
-Set environment variable before running:
+3) **Routage local (column_router.py)**
+- Le nœud `route_endpoint` passe l'analyse au router local `column_router`.
+- Le router compare les **paramètres + colonnes** des endpoints disponibles et sélectionne **un ou plusieurs** endpoints.
 
-PowerShell:
+4) **Appel WebApi**
+- Le nœud `call_webapi` exécute les endpoints sélectionnés (GET), gère un bearer token si configuré, puis persiste les résultats.
+- Sortie cache: `ai_assistant/data/cache/last_api_result.json`.
 
-```
-$env:ERP_ENDPOINTS_JSON = "C:/Users/brahim/OneDrive/Bureau/example erp stage pfe/aierpjava/test/src/main/resources/endpoints.json"
-$env:ERP_API_BASE_URL = "http://localhost:5000"
-python ai_assistant/langgraph_skeleton.py
-```
+5) **Transformation (DataFrame)**
+- Le nœud `generate_transform_plan` construit un plan JSON minimal à partir de `extracted_params`.
+- Le nœud `evidence_filter` charge le JSON, convertit en DataFrame (pandas si dispo) et applique:
+  - `filter_rows`
+  - `aggregate` (group_by + sum/avg/count/min/max)
+  - `select`, `sort`, `limit`
+- Sortie cache: `ai_assistant/data/cache/last_transform_plan.json`.
 
-You can also provide the WebApi project folder and let the script auto-detect URL from `Properties/launchSettings.json`:
+6) **Résultat + Dashboard**
+- Le backend persiste `ai_assistant/data/cache/last_display_result.json`.
+- Le frontend affiche un tableau + des graphiques via **Chart.js** (ex: bar/pie) à partir des lignes JSON.
 
-```
-$env:ERP_WEBAPI_PROJECT_DIR = "C:/Users/brahim/OneDrive/Bureau/stage2026/web/Webservices_webclient/stagepfe26/WebApi"
-python ai_assistant/langgraph_skeleton.py
-```
+## Run (assistant seul)
 
-If your WebApi uses auth:
+Depuis la racine du projet:
 
-```
-$env:ERP_API_BEARER_TOKEN = "your_token_here"
+```powershell
+python ai_assistant/langgraph_skeleton.py --serve --host 127.0.0.1 --port 8000
 ```
 
-## Enable Ollama for answer generation
+## Mode conversationnel (thread_id)
 
-```
-$env:USE_OLLAMA = "1"
-$env:OLLAMA_MODEL_ROUTER = "deepseek-coder:6.7b"
-$env:OLLAMA_MODEL_ANSWER = "llama3.1:8b"
-python ai_assistant/langgraph_skeleton.py
-```
+Le endpoint `POST /assistant/query` accepte un identifiant de session:
 
-Keep `USE_OLLAMA=0` (default) if Ollama is not running yet.
-
-## One-command local stack startup
-
-Use the bootstrap script to auto-start dependencies and launch LangGraph:
-
-```
-./ai_assistant/start_stack.ps1
-```
-
-Start with Ollama + dual models:
-
-```
-./ai_assistant/start_stack.ps1 -UseOllama -RouterModel "deepseek-coder:6.7b" -AnswerModel "llama3.1:8b"
-```
-
-If models are missing, auto-pull them:
-
-```
-./ai_assistant/start_stack.ps1 -UseOllama -AutoPullModels
-```
-
-What it does:
-- Starts Ollama server if needed.
-- Starts WebApi from `ERP_WEBAPI_PROJECT_DIR` if needed.
-- Detects WebApi URLs from `Properties/launchSettings.json`.
-- Sets environment variables and runs LangGraph.
-
-## One command for the full project
-
-From the project root, run:
-
-```
-powershell.exe -ExecutionPolicy Bypass -File .\start_all.ps1
-```
-
-Dry run:
-
-```
-powershell.exe -ExecutionPolicy Bypass -File .\start_all.ps1 -DryRun
-```
-
-This launches:
-- Ollama
-- WebApi
-- LangGraph
-- React frontend
-
-## Endpoint overrides (safe correction)
-
-Use `ai_assistant/data/endpoint_overrides.json` to force exact route mapping by endpoint ID.
-
-Example:
-
-```
+```json
 {
-  "get_bl_clients": "/api/BlClient/GetAllBlClients",
-  "get_clients": "/api/Client/GetAllClients"
+  "question": "affiche les clients",
+  "thread_id": "<uuid>"
 }
 ```
 
-Custom file path is supported:
+Si tu réutilises le même `thread_id` sur plusieurs requêtes, le backend conserve `history` (mémoire en RAM) et l'utilise pour améliorer l'extraction/routage.
 
-```
-$env:ERP_ENDPOINT_OVERRIDES_JSON = "C:/path/to/endpoint_overrides.json"
-```
+## One-command stack (backend)
 
-`endpoint_overrides.json` stays the primary mapping for your business endpoint IDs.
-
-## Auto-load other WebApi APIs
-
-The assistant can enrich endpoint candidates from live Swagger (`/swagger/v1/swagger.json`) so it can use additional GET APIs exposed by WebApi.
-
-Enabled by default:
-
-```
-$env:ERP_LOAD_SWAGGER_ENDPOINTS = "1"
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\ai_assistant\start_stack.ps1
 ```
 
-Disable if you want only your curated endpoint file:
+Ce script:
+- démarre Ollama (optionnel) + WebApi (si nécessaire)
+- configure les variables d'environnement
+- démarre le serveur HTTP de l'assistant
 
-```
-$env:ERP_LOAD_SWAGGER_ENDPOINTS = "0"
+## One-command stack (full project)
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\start_all.ps1
 ```
 
-When enrichment is enabled, generated Swagger endpoints are filtered by inferred domain from the user question (`commercial`, `stock`, `finance`, `rh`, `achat`, `general`) to reduce noisy routing.
+## Variables d'environnement utiles
+
+- `ERP_ENDPOINTS_JSON`: fichier endpoints (par défaut: `ai_assistant/data/endpoints.get.json`)
+- `ERP_API_BASE_URL`: base URL WebApi (ex: `http://localhost:5006`)
+- `ERP_API_BEARER_TOKEN`: token bearer (ou utiliser auth ci-dessous)
+- `ERP_API_AUTH_URL`, `ERP_API_USERNAME`, `ERP_API_PASSWORD`, `ERP_API_SOCIETE`: récupération automatique du token
+
+Mode “solution” (par défaut dans `start_stack.ps1`):
+- `ERP_ROUTER_MODE=columns` (router local)
+- `ERP_LOCAL_TRANSFORM=1` (plan local + DataFrame)
+
+Optionnel:
+- `ERP_GENERATE_TEXT_ANSWER=1` pour générer une réponse texte via Ollama (sinon l'UI se base surtout sur le tableau + charts)
+
+## Comparaison Chart.js vs Seaborn
+
+- Le backend expose `GET /assistant/seaborn.png` : rend un PNG Seaborn basé sur le dernier cache `ai_assistant/data/cache/last_display_result.json`.
+- Dépendances Python nécessaires: `seaborn`, `matplotlib`, `pandas`.
