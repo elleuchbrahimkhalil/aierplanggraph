@@ -1,228 +1,171 @@
-import { useMemo } from 'react';
-import { Bar, Pie, Line, Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { useEffect, useMemo, useState } from 'react';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-const COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#6366f1',
+const CHART_TYPES = [
+  { value: 'auto', label: 'Automatique' },
+  { value: 'bar', label: 'Barres' },
+  { value: 'line', label: 'Ligne' },
+  { value: 'hist', label: 'Histogramme' },
+  { value: 'count', label: 'Comptage' },
+  { value: 'box', label: 'Boîte' },
 ];
 
-function detectNumericColumns(rows) {
-  if (!Array.isArray(rows) || rows.length === 0) return [];
-  
-  const numericCols = [];
-  const firstRow = rows[0];
-  
-  if (typeof firstRow !== 'object') return [];
-  
-  Object.entries(firstRow).forEach(([key, value]) => {
-    if (typeof value === 'number') {
-      numericCols.push(key);
-    } else if (typeof value === 'string') {
-      const parsed = parseFloat(value);
-      if (!isNaN(parsed) && value.trim() !== '') {
-        numericCols.push(key);
-      }
+const AGGREGATIONS = [
+  { value: 'sum', label: 'Somme' },
+  { value: 'mean', label: 'Moyenne' },
+  { value: 'count', label: 'Nombre' },
+];
+
+function isNumericValue(value) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  return Number.isFinite(Number(value));
+}
+
+function detectColumns(rows) {
+  const numeric = [];
+  const categorical = [];
+  const columns = Object.keys(rows?.[0] || {});
+
+  for (const column of columns) {
+    const values = rows.map((row) => row?.[column]).filter((value) => value != null && value !== '');
+    if (!values.length) continue;
+    const numericCount = values.filter(isNumericValue).length;
+    if (numericCount >= Math.max(1, Math.ceil(values.length * 0.6))) {
+      numeric.push(column);
+    } else {
+      const averageLength = values.reduce((sum, value) => sum + String(value).length, 0) / values.length;
+      if (averageLength <= 80) categorical.push(column);
     }
-  });
-  
-  return numericCols;
-}
-
-function detectCategoricalColumns(rows) {
-  if (!Array.isArray(rows) || rows.length === 0) return [];
-  
-  const catCols = [];
-  const firstRow = rows[0];
-  
-  if (typeof firstRow !== 'object') return [];
-  
-  Object.entries(firstRow).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.length < 50) {
-      catCols.push(key);
-    } else if (typeof value === 'boolean') {
-      catCols.push(key);
-    }
-  });
-  
-  return catCols;
-}
-
-function generateBarChart(rows, labelCol, valueCol) {
-  const labels = rows.map(r => String(r[labelCol] || '').substring(0, 20));
-  const values = rows.map(r => {
-    const val = r[valueCol];
-    return typeof val === 'number' ? val : parseFloat(val) || 0;
-  });
-  
-  return {
-    labels,
-    datasets: [
-      {
-        label: valueCol,
-        data: values,
-        backgroundColor: COLORS[0],
-        borderColor: COLORS[0],
-        borderWidth: 1,
-      },
-    ],
-  };
-}
-
-function generatePieChart(rows, labelCol, valueCol) {
-  const labels = rows.slice(0, 10).map(r => String(r[labelCol] || '').substring(0, 15));
-  const values = rows.slice(0, 10).map(r => {
-    const val = r[valueCol];
-    return typeof val === 'number' ? val : parseFloat(val) || 0;
-  });
-  
-  return {
-    labels,
-    datasets: [
-      {
-        data: values,
-        backgroundColor: COLORS.slice(0, labels.length),
-        borderColor: '#ffffff',
-        borderWidth: 2,
-      },
-    ],
-  };
-}
-
-function generateSummaryStats(rows, numericCols) {
-  if (!Array.isArray(rows) || rows.length === 0 || numericCols.length === 0) {
-    return null;
   }
 
-  const col = numericCols[0];
-  const values = rows.map(r => {
-    const val = r[col];
-    return typeof val === 'number' ? val : parseFloat(val) || 0;
-  }).filter(v => !isNaN(v));
+  return { numeric, categorical, columns };
+}
 
-  if (values.length === 0) return null;
-
-  const sum = values.reduce((a, b) => a + b, 0);
-  const avg = sum / values.length;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-
-  return { sum, avg, max, min, col };
+function buildSeabornUrl(config) {
+  const params = new URLSearchParams();
+  if (config.kind !== 'auto') params.set('kind', config.kind);
+  if (config.x) params.set('x', config.x);
+  if (config.y) params.set('y', config.y);
+  if (config.agg) params.set('agg', config.agg);
+  if (config.limit) params.set('limit', String(config.limit));
+  params.set('ts', String(Date.now()));
+  return `/assistant/seaborn.png?${params.toString()}`;
 }
 
 export default function ChartBuilder({ rows, seabornUrl }) {
-  const numericCols = useMemo(() => detectNumericColumns(rows), [rows]);
-  const catCols = useMemo(() => detectCategoricalColumns(rows), [rows]);
-  const stats = useMemo(() => generateSummaryStats(rows, numericCols), [rows, numericCols]);
+  const { numeric, categorical, columns } = useMemo(() => detectColumns(rows), [rows]);
+  const [config, setConfig] = useState({
+    kind: 'auto',
+    x: '',
+    y: '',
+    agg: 'sum',
+    limit: 10,
+  });
+  const [previewUrl, setPreviewUrl] = useState(seabornUrl);
+
+  useEffect(() => {
+    setPreviewUrl(seabornUrl);
+  }, [seabornUrl]);
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return (
       <article className="card">
-        <h2>📊 Visualisations</h2>
+        <h2>Visualisations Seaborn</h2>
         <p className="params-empty">Aucune donnée à visualiser.</p>
       </article>
     );
   }
 
-  const hasNumeric = numericCols.length > 0;
-  const hasCategorical = catCols.length > 0;
-  const canCreateCharts = hasNumeric && hasCategorical;
+  function updateConfig(key, value) {
+    setConfig((current) => ({ ...current, [key]: value }));
+  }
+
+  function refreshPreview() {
+    setPreviewUrl(buildSeabornUrl(config));
+  }
+
+  const selectedUrl = previewUrl || seabornUrl;
 
   return (
     <article className="card charts-card">
-      <h2>📊 Visualisations</h2>
-
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-box">
-            <span className="stat-label">Somme ({stats.col})</span>
-            <span className="stat-value">{stats.sum.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-label">Moyenne</span>
-            <span className="stat-value">{stats.avg.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-label">Max</span>
-            <span className="stat-value">{stats.max.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-label">Min</span>
-            <span className="stat-value">{stats.min.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</span>
-          </div>
+      <div className="card-heading-row">
+        <div>
+          <h2>Visualisations Seaborn</h2>
+          <p className="params-empty">
+            {rows.length} ligne(s), {numeric.length} colonne(s) numérique(s), {categorical.length} colonne(s)
+            catégorielle(s).
+          </p>
         </div>
-      )}
+        <button type="button" className="secondary-button" onClick={refreshPreview}>
+          Actualiser
+        </button>
+      </div>
 
-      {canCreateCharts && (
-        <div className="charts-grid">
-          <div className="chart-container">
-            <h3>{catCols[0]} vs {numericCols[0]} (Barre)</h3>
-            <Bar
-              data={generateBarChart(rows.slice(0, 10), catCols[0], numericCols[0])}
-              options={{
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { display: true } },
-              }}
-            />
-          </div>
-
-          {rows.length <= 15 && (
-            <div className="chart-container">
-              <h3>{catCols[0]} - Répartition (Pie)</h3>
-              <Pie
-                data={generatePieChart(rows, catCols[0], numericCols[0])}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: true,
-                  plugins: { legend: { position: 'right' } },
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {!canCreateCharts && (
-        <p className="params-empty">
-          {!hasNumeric ? '❌ Pas de colonnes numériques pour les graphiques.' : ''}
-          {!hasCategorical ? '❌ Pas de colonnes catégoriques pour les labels.' : ''}
-        </p>
-      )}
-
-      {seabornUrl ? (
-        <div className="chart-container" style={{ marginTop: '16px' }}>
-          <h3>Seaborn (Python) - même DataFrame</h3>
-          <img
-            src={seabornUrl}
-            alt="Seaborn chart"
-            style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }}
+      <div className="viz-controls">
+        <label>
+          Type
+          <select value={config.kind} onChange={(event) => updateConfig('kind', event.target.value)}>
+            {CHART_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Axe X / catégorie
+          <select value={config.x} onChange={(event) => updateConfig('x', event.target.value)}>
+            <option value="">Auto</option>
+            {columns.map((column) => (
+              <option key={column} value={column}>
+                {column}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Valeur Y
+          <select value={config.y} onChange={(event) => updateConfig('y', event.target.value)}>
+            <option value="">Auto</option>
+            {numeric.map((column) => (
+              <option key={column} value={column}>
+                {column}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Agrégation
+          <select value={config.agg} onChange={(event) => updateConfig('agg', event.target.value)}>
+            {AGGREGATIONS.map((agg) => (
+              <option key={agg.value} value={agg.value}>
+                {agg.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Top
+          <input
+            type="number"
+            min="3"
+            max="50"
+            value={config.limit}
+            onChange={(event) => updateConfig('limit', Number(event.target.value))}
           />
+        </label>
+      </div>
+
+      {selectedUrl ? (
+        <div className="seaborn-frame">
+          <img src={selectedUrl} alt="Graphique Seaborn" />
+          <a className="graph-link" href={selectedUrl} target="_blank" rel="noreferrer">
+            Ouvrir le PNG
+          </a>
         </div>
-      ) : null}
+      ) : (
+        <p className="params-empty">Le graphique Seaborn sera disponible après une requête assistant.</p>
+      )}
     </article>
   );
 }

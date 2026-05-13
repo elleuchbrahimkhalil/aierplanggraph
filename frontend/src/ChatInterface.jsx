@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export default function ChatInterface({
   messages,
   loading,
   onSend,
+  onNewChat,
   placeholder = "Posez votre question (ex: 'Filtre les clients par ville')...",
 }) {
   const [input, setInput] = useState('');
+  const historyRef = useRef(null);
+
+  useEffect(() => {
+    const node = historyRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [messages, loading]);
 
   function handleSend() {
     if (loading) return;
@@ -21,7 +28,7 @@ export default function ChatInterface({
   return (
     <div className="chat-panel" aria-label="Discussion">
       <div className="chat-panel-title">Discussion</div>
-      <div className="chat-history">
+      <div className="chat-history" ref={historyRef}>
         {messages.map((msg, i) => (
           <div key={msg?.id || `msg-${i}`} className={`msg-bubble ${msg?.role || ''}`.trim()}>
             <small>{msg?.role === 'user' ? 'Vous' : 'Assistant'}:</small>
@@ -33,15 +40,23 @@ export default function ChatInterface({
             ) : null}
           </div>
         ))}
+        {loading ? (
+          <div className="msg-bubble assistant thinking">
+            <small>Assistant:</small>
+            <p>Analyse de la demande...</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="chat-input-row">
-        <input
-          type="text"
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSend();
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
           }}
           placeholder={placeholder}
           disabled={!!loading}
@@ -50,6 +65,9 @@ export default function ChatInterface({
           {loading ? '...' : 'Envoyer'}
         </button>
       </div>
+      <button type="button" className="secondary-button full-width" onClick={onNewChat} disabled={!!loading}>
+        Nouvelle discussion
+      </button>
     </div>
   );
 }

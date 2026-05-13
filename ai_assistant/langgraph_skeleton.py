@@ -11,6 +11,7 @@ import io
 from functools import lru_cache
 import threading
 from http import HTTPStatus
+from urllib.parse import parse_qs
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -2240,7 +2241,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _render_seaborn_png(self, records: List[Dict[str, Any]]) -> bytes:
+    def _render_seaborn_png(self, records: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None) -> bytes:
         """Render a simple Seaborn chart from tabular records.
 
         Heuristics:
@@ -2264,6 +2265,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
                 "Seaborn dependencies not installed. Install seaborn/matplotlib/pandas."
             ) from exc
 
+        options = options or {}
         df = pd.DataFrame([row for row in records if isinstance(row, dict)])
         if df.empty:
             raise ValueError("No tabular rows available")
@@ -2291,42 +2293,122 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
                 if s.dropna().astype(str).map(len).mean() if len(s.dropna()) else 0 < 60:
                     categorical_cols.append(col)
 
+        def clean_option(value: Any) -> str:
+            if isinstance(value, list):
+                value = value[0] if value else ""
+            return str(value or "").strip()
+
+        requested_kind = clean_option(options.get("kind")).lower() or "auto"
+        requested_x = clean_option(options.get("x"))
+        requested_y = clean_option(options.get("y"))
+        requested_agg = clean_option(options.get("agg")).lower() or "sum"
+        try:
+            limit = int(clean_option(options.get("limit")) or "10")
+        except ValueError:
+            limit = 10
+        limit = max(3, min(50, limit))
+
+        if requested_x and requested_x not in df.columns:
+            requested_x = ""
+        if requested_y and requested_y not in df.columns:
+            requested_y = ""
+        if requested_agg not in {"sum", "mean", "count"}:
+            requested_agg = "sum"
+        if requested_kind not in {"auto", "bar", "line", "hist", "count", "box"}:
+            requested_kind = "auto"
+
         sns.set_theme(style="whitegrid")
-        fig, ax = plt.subplots(figsize=(10, 4.5), dpi=140)
+        fig, ax = plt.subplots(figsize=(10, 4.8), dpi=140)
 
         title = "Seaborn"
 
-        if categorical_cols and numeric_cols:
+        x_candidates = [requested_x] if requested_x else []
+        x_candidates += [c for c in categorical_cols if c not in x_candidates]
+        x_candidates += [c for c in df.columns if c not in x_candidates]
+        y_candidates = [requested_y] if requested_y else []
+        y_candidates += [c for c in numeric_cols if c not in y_candidates]
+
+        def numeric_frame(col: str) -> "pd.DataFrame":
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            return df[[col]].dropna()
+
+        def aggregate_frame(x: str, y: str) -> "pd.DataFrame":
+            work = df[[x, y]].copy()
+            work[y] = pd.to_numeric(work[y], errors="coerce")
+            work = work.dropna()
+            if work.empty:
+                return work
+            if requested_agg == "mean":
+                grouped = work.groupby(x, dropna=True, as_index=False)[y].mean()
+                grouped = grouped.sort_values(y, ascending=False)
+                return grouped.head(limit)
+            if requested_agg == "count":
+                grouped = work.groupby(x, dropna=True, as_index=False)[y].count()
+                grouped = grouped.rename(columns={y: "count"})
+                grouped = grouped.sort_values("count", ascending=False)
+                return grouped.head(limit)
+            grouped = work.groupby(x, dropna=True, as_index=False)[y].sum()
+            grouped = grouped.sort_values(y, ascending=False)
+            return grouped.head(limit)
+
+        if requested_kind in {"hist", "box"} or (requested_kind == "auto" and numeric_cols and not categorical_cols):
+            col = requested_y or (numeric_cols[0] if numeric_cols else "")
+            if not col:
+                raise ValueError("No numeric data for plotting")
+            df2 = numeric_frame(col)
+            if df2.empty:
+                raise ValueError("No numeric data for plotting")
+            if requested_kind == "box":
+                sns.boxplot(data=df2, x=col, ax=ax)
+                title = f"Boîte de {col}"
+            else:
+                sns.histplot(data=df2, x=col, kde=True, ax=ax)
+                ax.set_ylabel("count")
+                title = f"Distribution de {col}"
+            ax.set_xlabel(col)
+
+        elif requested_kind == "count" or (requested_kind == "auto" and categorical_cols and not numeric_cols):
+            col = requested_x or (categorical_cols[0] if categorical_cols else "")
+            if not col:
+                raise ValueError("No categorical data for plotting")
+            df2 = df[[col]].dropna()
+            if df2.empty:
+                raise ValueError("No categorical data for plotting")
+            top = df2[col].astype(str).value_counts().head(limit).index.tolist()
+            df2 = df2[df2[col].astype(str).isin(top)]
+            sns.countplot(data=df2, x=col, ax=ax)
+            ax.set_xlabel(col)
+            ax.set_ylabel("count")
+            ax.tick_params(axis="x", rotation=25)
+            title = f"Répartition de {col}"
+
+        elif categorical_cols and numeric_cols:
             # Pick the most usable columns (most non-null values)
-            cat_ranked = sorted(
-                categorical_cols,
-                key=lambda c: int(df[c].notna().sum()),
-                reverse=True,
-            )
+            cat_ranked = sorted(x_candidates, key=lambda c: int(df[c].notna().sum()), reverse=True)
             num_ranked = sorted(
-                numeric_cols,
-                key=lambda c: int(pd.to_numeric(df[c], errors="coerce").notna().sum()),
+                y_candidates,
+                key=lambda c: int(pd.to_numeric(df[c], errors="coerce").notna().sum()) if c in df.columns else 0,
                 reverse=True,
             )
 
             plotted = False
             for x in cat_ranked:
                 for y in num_ranked:
-                    df[y] = pd.to_numeric(df[y], errors="coerce")
-                    df2 = df[[x, y]].dropna()
+                    if x not in df.columns or y not in df.columns:
+                        continue
+                    df2 = aggregate_frame(x, y)
                     if df2.empty:
                         continue
-
-                    top = df2[x].astype(str).value_counts().head(10).index.tolist()
-                    df2 = df2[df2[x].astype(str).isin(top)]
-                    if df2.empty:
-                        continue
-
-                    sns.barplot(data=df2, x=x, y=y, estimator=np.sum, errorbar=None, ax=ax)
+                    value_col = "count" if requested_agg == "count" else y
+                    if requested_kind == "line":
+                        sns.lineplot(data=df2, x=x, y=value_col, marker="o", ax=ax)
+                    else:
+                        sns.barplot(data=df2, x=x, y=value_col, errorbar=None, ax=ax)
                     ax.set_xlabel(x)
-                    ax.set_ylabel(y)
+                    ax.set_ylabel(value_col)
                     ax.tick_params(axis="x", rotation=25)
-                    title = f"Somme de {y} par {x}"
+                    agg_label = {"sum": "Somme", "mean": "Moyenne", "count": "Nombre"}[requested_agg]
+                    title = f"{agg_label} de {y} par {x}"
                     plotted = True
                     break
                 if plotted:
@@ -2335,8 +2417,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
             if not plotted:
                 # Fallback to numeric-only plot
                 col = num_ranked[0]
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-                df2 = df[[col]].dropna()
+                df2 = numeric_frame(col)
                 if df2.empty:
                     raise ValueError("No non-null data for plotting")
                 sns.histplot(data=df2, x=col, kde=True, ax=ax)
@@ -2346,8 +2427,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
 
         elif numeric_cols:
             col = numeric_cols[0]
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-            df2 = df[[col]].dropna()
+            df2 = numeric_frame(col)
             if df2.empty:
                 raise ValueError("No numeric data for plotting")
             sns.histplot(data=df2, x=col, kde=True, ax=ax)
@@ -2360,7 +2440,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
             df2 = df[[col]].dropna()
             if df2.empty:
                 raise ValueError("No categorical data for plotting")
-            top = df2[col].astype(str).value_counts().head(10).index.tolist()
+            top = df2[col].astype(str).value_counts().head(limit).index.tolist()
             df2 = df2[df2[col].astype(str).isin(top)]
             sns.countplot(data=df2, x=col, ax=ax)
             ax.set_xlabel(col)
@@ -2417,7 +2497,7 @@ class AssistantRequestHandler(BaseHTTPRequestHandler):
                 records = payload.get("display", {}).get("records", [])
                 if not isinstance(records, list):
                     raise ValueError("Invalid records")
-                image = self._render_seaborn_png(records)
+                image = self._render_seaborn_png(records, parse_qs(parsed.query))
                 self._send_bytes(image, "image/png", status=HTTPStatus.OK)
                 return
             except Exception as exc:

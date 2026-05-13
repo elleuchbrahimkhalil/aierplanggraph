@@ -1,33 +1,14 @@
 import { useMemo, useState } from 'react';
 import ChartBuilder from './ChartBuilder';
 import ChatInterface from './ChatInterface';
+import DataTable from './DataTable';
 
 const QUICK_ACTIONS = [
-  {
-    label: 'Afficher les clients',
-    hint: 'Commercial',
-    query: 'affiche les clients',
-  },
-  {
-    label: 'Paiements clients',
-    hint: 'Finance',
-    query: 'liste des paiements clients',
-  },
-  {
-    label: 'Statistiques ventes',
-    hint: 'Ventes',
-    query: 'affiche les ventes',
-  },
-  {
-    label: 'Rapport ventes clients',
-    hint: 'Ventes',
-    query: 'affiche les ventes clients',
-  },
-  {
-    label: 'Stock global',
-    hint: 'Stock',
-    query: 'montre le stock',
-  },
+  { label: 'Afficher les clients', hint: 'Commercial', query: 'affiche les clients' },
+  { label: 'Paiements clients', hint: 'Finance', query: 'liste des paiements clients' },
+  { label: 'Statistiques ventes', hint: 'Ventes', query: 'affiche les ventes' },
+  { label: 'Rapport ventes clients', hint: 'Ventes', query: 'affiche les ventes clients' },
+  { label: 'Stock global', hint: 'Stock', query: 'montre le stock' },
 ];
 
 function normalizeAssistantRows(records) {
@@ -57,12 +38,19 @@ function collectColumns(rows) {
   for (const row of rows) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     for (const key of Object.keys(row)) {
-      if (!seen.includes(key)) {
-        seen.push(key);
-      }
+      if (!seen.includes(key)) seen.push(key);
     }
   }
   return seen;
+}
+
+function createMessage(role, content, extra = {}) {
+  return {
+    id: crypto.randomUUID(),
+    role,
+    content,
+    ...extra,
+  };
 }
 
 export default function App() {
@@ -75,17 +63,7 @@ export default function App() {
   const [seabornUrl, setSeabornUrl] = useState('');
   const [messages, setMessages] = useState([]);
 
-  function createMessage(role, content, extra = {}) {
-    return {
-      id: crypto.randomUUID(),
-      role,
-      content,
-      ...extra,
-    };
-  }
-
-  // Persistance du thread_id pour la session
-  const threadId = useMemo(() => {
+  const [threadId, setThreadId] = useState(() => {
     const saved = sessionStorage.getItem('erp_thread_id');
     if (saved) return saved;
     const newId = crypto.randomUUID();
@@ -102,6 +80,10 @@ export default function App() {
   const visibleRows = useMemo(() => rows, [rows]);
   const jsonPreview = useMemo(() => JSON.stringify(rows, null, 2), [rows]);
   const extractedParamEntries = useMemo(() => Object.entries(extractedParams || {}), [extractedParams]);
+  const displayedMessages = useMemo(
+    () => (messages.length ? messages : [createMessage('assistant', 'Bonjour, posez votre question ERP.')]),
+    [messages]
+  );
 
   async function runAssistant(askedQuestion) {
     setLoading(true);
@@ -112,17 +94,14 @@ export default function App() {
     setSeabornUrl('');
 
     try {
-      // Ajout immédiat du message utilisateur à l'UI (optimistic).
       setMessages((prev) => [...prev, createMessage('user', askedQuestion)]);
 
       const response = await fetch('/assistant/query', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           question: askedQuestion,
-          thread_id: threadId 
+          thread_id: threadId,
         }),
       });
 
@@ -135,9 +114,7 @@ export default function App() {
       let displayPayload = null;
       try {
         const displayResponse = await fetch('/assistant/last-result');
-        if (displayResponse.ok) {
-          displayPayload = await displayResponse.json();
-        }
+        if (displayResponse.ok) displayPayload = await displayResponse.json();
       } catch {
         displayPayload = null;
       }
@@ -146,15 +123,17 @@ export default function App() {
         ? displayPayload.endpoints.map((item) => item?.url || item?.id).filter(Boolean)
         : [];
       const displayRecords = displayPayload?.display?.records || [];
-
       const selectedEndpoints = Array.isArray(payload?.selected_endpoints)
         ? payload.selected_endpoints.map((item) => item?.url || item?.id).filter(Boolean)
         : [];
-      const filteredRecords = displayRecords.length ? displayRecords : (payload?.filtered_result?.records || []);
+      const filteredRecords = displayRecords.length ? displayRecords : payload?.filtered_result?.records || [];
       const normalizedRows = normalizeAssistantRows(filteredRecords);
-      const resolvedExtractedParams = displayPayload && typeof displayPayload?.extractedParams === 'object'
-        ? displayPayload.extractedParams
-        : (payload && typeof payload?.extracted_params === 'object' ? payload.extracted_params : {});
+      const resolvedExtractedParams =
+        displayPayload && typeof displayPayload?.extractedParams === 'object'
+          ? displayPayload.extractedParams
+          : payload && typeof payload?.extracted_params === 'object'
+            ? payload.extracted_params
+            : {};
       const assistantErrors = Array.isArray(payload?.errors) ? payload.errors : [];
       const visibleErrors = normalizedRows.length
         ? assistantErrors.filter((entry) => !entry.toLowerCase().includes('ollama error'))
@@ -165,9 +144,8 @@ export default function App() {
       );
 
       const nextGraphUrl = normalizedRows.length ? `/assistant/seaborn.png?ts=${Date.now()}` : '';
-
       const assistantFromHistory = Array.isArray(payload?.history)
-        ? [...payload.history].reverse().find((m) => m?.role === 'assistant')
+        ? [...payload.history].reverse().find((message) => message?.role === 'assistant')
         : null;
       const assistantText = payload?.answer ?? assistantFromHistory?.content ?? '';
 
@@ -177,7 +155,7 @@ export default function App() {
           createMessage(
             'assistant',
             String(assistantText),
-            nextGraphUrl ? { graphUrl: nextGraphUrl, graphTitle: 'Graph (Seaborn)' } : {}
+            nextGraphUrl ? { graphUrl: nextGraphUrl, graphTitle: 'Graphique Seaborn' } : {}
           ),
         ]);
       }
@@ -185,15 +163,8 @@ export default function App() {
       setAssistantAnswer(displayPayload?.answer || payload?.answer || '');
       setRows(normalizedRows);
       setExtractedParams(resolvedExtractedParams);
-
-      if (nextGraphUrl) {
-        // cache-bust so the browser reloads the latest PNG
-        setSeabornUrl(nextGraphUrl);
-      }
-
-      if (visibleErrors.length) {
-        setError(visibleErrors.join(' | '));
-      }
+      if (nextGraphUrl) setSeabornUrl(nextGraphUrl);
+      if (visibleErrors.length) setError(visibleErrors.join(' | '));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setMessages((prev) => [
@@ -203,6 +174,19 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function resetConversation() {
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem('erp_thread_id', newId);
+    setThreadId(newId);
+    setMessages([]);
+    setRows([]);
+    setCalledEndpoint('');
+    setAssistantAnswer('');
+    setExtractedParams({});
+    setSeabornUrl('');
+    setError('');
   }
 
   return (
@@ -215,8 +199,8 @@ export default function App() {
           <p className="kicker">React + WebApi + LangGraph Ready</p>
           <h1>Assistant ERP</h1>
           <p className="subtitle">
-            Pose une question métier, laisse LangGraph choisir les bonnes routes WebApi, puis affiche
-            le résultat sous forme de tableau structuré et JSON lisible.
+            Pose une question métier, laisse LangGraph choisir les bonnes routes WebApi, puis affiche le résultat
+            sous forme de tableau structuré, CSV et visualisation Seaborn.
           </p>
         </header>
 
@@ -226,13 +210,10 @@ export default function App() {
               <p className="params-title">Discussion</p>
 
               <ChatInterface
-                messages={
-                  messages.length
-                    ? messages
-                    : [createMessage('assistant', 'Bonjour, posez votre question ERP.')]
-                }
+                messages={displayedMessages}
                 loading={loading}
                 onSend={(text) => runAssistant(text)}
+                onNewChat={resetConversation}
               />
 
               <div className="chips">
@@ -240,9 +221,7 @@ export default function App() {
                   <button
                     className="chip"
                     key={action.label}
-                    onClick={() => {
-                      runAssistant(action.query);
-                    }}
+                    onClick={() => runAssistant(action.query)}
                     disabled={loading}
                   >
                     {action.label} <span>{action.hint}</span>
@@ -254,9 +233,9 @@ export default function App() {
 
           <section className="right-pane">
             <article className="card">
-              <h2>État de l’appel</h2>
+              <h2>État de l'appel</h2>
               <p>{summary}</p>
-              <p className="mono">Endpoints: {calledEndpoint || '—'}</p>
+              <p className="mono">Endpoints: {calledEndpoint || '-'}</p>
               <div className="params-box">
                 <p className="params-title">Paramètres extraits</p>
                 {extractedParamEntries.length ? (
@@ -278,30 +257,7 @@ export default function App() {
 
             <article className="card">
               <h2>Tableau structuré</h2>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      {columns.map((column) => (
-                        <th key={column}>{column}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.map((row, idx) => (
-                      <tr key={`row-${idx}`}>
-                        <td>{idx + 1}</td>
-                        {columns.map((column) => (
-                          <td className="cell-json" key={`${column}-${idx}`}>
-                            {formatCellValue(row?.[column])}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable rows={visibleRows} columns={columns} />
             </article>
 
             <ChartBuilder rows={rows} seabornUrl={seabornUrl} />
