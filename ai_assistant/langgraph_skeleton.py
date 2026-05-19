@@ -604,6 +604,11 @@ def _extract_request_with_llama(question: str, history: List[Dict[str, str]] = N
         "- Do not invent default columns such as code, raison, tel unless the user asked for them.\n"
         "- Distinguish display columns from filters: 'with email' or 'qui ont un email' usually means a filter on email presence, not automatically a request for telephone or code.\n"
         "- extracted_params must contain only useful filters, identifiers, dates, codes, group_by fields, or aggregations clearly implied by the question.\n"
+        "- Treat SQL-like WHERE conditions as filters, not display fields. Put them in extracted_params.filters as objects: {field, operator, value}.\n"
+        "- Supported filter operators: equals, not_equals, contains, not_null, is_null, gt, gte, lt, lte, year_equals.\n"
+        "- Examples: 'annee = 2024' -> {\"field\":\"annee\",\"operator\":\"equals\",\"value\":2024} when an annee column exists; if only a date column exists, use {\"field\":\"date_fact\",\"operator\":\"year_equals\",\"value\":2024}.\n"
+        "- Examples: 'code client >= 1000' -> {\"field\":\"cod_clt\",\"operator\":\"gte\",\"value\":1000}; 'solde > 0' -> {\"field\":\"solde_reel\",\"operator\":\"gt\",\"value\":0}; 'client contient ALPHA' -> {\"field\":\"raison\",\"operator\":\"contains\",\"value\":\"ALPHA\"}.\n"
+        "- For ranges, create two filters: 'annee entre 2022 et 2024' -> gte 2022 and lte 2024 on the same year/annee field.\n"
         "- For aggregate questions, prefer extracted_params.group_by and extracted_params.aggregations.\n"
         "- Never mix entities: fournisseurs is not clients, articles is not factures.\n"
         "- missing must list required business details still absent from the question.\n"
@@ -990,10 +995,11 @@ def _normalize_transform_condition(condition: Dict[str, Any]) -> Optional[Dict[s
         "!=": "not_equals", "<>": "not_equals", "ne": "not_equals",
         "contains": "contains", "like": "contains",
         "is_null": "is_null", "not_null": "not_null",
+        "year": "year_equals", "annee": "year_equals", "année": "year_equals", "year_equals": "year_equals",
         ">": "gt", ">=": "gte", "<": "lt", "<=": "lte",
     }
     operator = operator_map.get(raw_operator, raw_operator)
-    if operator not in {"equals", "not_equals", "contains", "is_null", "not_null", "gt", "gte", "lt", "lte"}:
+    if operator not in {"equals", "not_equals", "contains", "is_null", "not_null", "gt", "gte", "lt", "lte", "year_equals"}:
         operator = "equals"
 
     value = condition.get("value")
@@ -1142,11 +1148,15 @@ def _build_transform_plan_with_llama(
         "2. If the analysis is weak, infer the display/filter/aggregate intent directly from the original question and the real columns.\n"
         "3. requested_fields must contain only columns explicitly requested for display.\n"
         "4. Expressions like 'qui ont un email', 'avec email', 'non vide', 'renseigne' usually mean filter_rows with operator not_null.\n"
-        "5. For totals, counts, sums, averages, grouped or monthly questions, use aggregate with groupby and aggs.\n"
-        "6. Use select only for display columns, not for hidden filter columns.\n"
-        "7. Use sort only when the question implies order.\n"
-        "8. Add limit only when needed to keep the result readable.\n"
-        "9. Return the minimal valid plan.\n"
+        "5. SQL-like WHERE expressions must become filter_rows conditions. Use equals for '=', gte for '>=', gt for '>', lte for '<=', lt for '<', not_equals for '!=' or '<>', contains for text search.\n"
+        "6. For year filters, prefer the real annee/year column when available. If the result has only date columns, filter that date column with operator year_equals. Example: 'annee = 2024' -> {\"op\":\"filter_rows\",\"conditions\":[{\"field\":\"date_fact\",\"operator\":\"year_equals\",\"value\":2024}]}.\n"
+        "7. For ranges, create multiple conditions on the same field. Example: 'code client >= 1000' -> {\"field\":\"cod_clt\",\"operator\":\"gte\",\"value\":1000}; 'annee entre 2022 et 2024' -> gte 2022 and lte 2024.\n"
+        "8. For totals, counts, sums, averages, grouped or monthly questions, use aggregate with groupby and aggs.\n"
+        "9. Use select only for display columns, not for hidden filter columns.\n"
+        "10. Use sort only when the question implies order.\n"
+        "11. Add limit only when needed to keep the result readable.\n"
+        "12. Return the minimal valid plan.\n"
+        "Example filter step: {\"op\":\"filter_rows\",\"conditions\":[{\"field\":\"cod_clt\",\"operator\":\"gte\",\"value\":1000},{\"field\":\"date_fact\",\"operator\":\"year_equals\",\"value\":2024}]}\n"
         "Example aggregate step: {\"op\":\"aggregate\",\"groupby\":[\"client\"],\"aggs\":[{\"field\":\"montant\",\"agg\":\"sum\",\"as\":\"total_montant\"}]}\n"
         "Return JSON: {\"steps\": [...]}"
     )
@@ -1190,6 +1200,29 @@ def _apply_filter_rows(rows: List[Dict[str, Any]], conditions: List[Dict[str, An
     if not isinstance(conditions, list) or not conditions:
         return rows
 
+    def values_equal(left: Any, right: Any) -> bool:
+        if left == right:
+            return True
+        try:
+            left_num = float(left)
+            right_num = float(right)
+            return math.isclose(left_num, right_num)
+        except (TypeError, ValueError):
+            return str(left).strip().lower() == str(right).strip().lower()
+
+    def extract_year(value: Any) -> Optional[int]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)) and 1000 <= int(value) <= 9999:
+            return int(value)
+        match = re.search(r"(19|20)\d{2}", str(value))
+        if not match:
+            return None
+        try:
+            return int(match.group(0))
+        except ValueError:
+            return None
+
     def matches(row: Dict[str, Any], condition: Dict[str, Any]) -> bool:
         field = str(condition.get("field", "")).strip()
         operator = str(condition.get("operator", "equals")).strip().lower()
@@ -1198,15 +1231,19 @@ def _apply_filter_rows(rows: List[Dict[str, Any]], conditions: List[Dict[str, An
             return True
         current = row.get(field)
         if operator == "equals":
-            return current == value
+            return values_equal(current, value)
         if operator == "not_equals":
-            return current != value
+            return not values_equal(current, value)
         if operator == "contains":
             return str(value).lower() in str(current).lower()
         if operator == "is_null":
             return current is None
         if operator == "not_null":
             return current is not None
+        if operator == "year_equals":
+            current_year = extract_year(current)
+            expected_year = extract_year(value)
+            return current_year is not None and expected_year is not None and current_year == expected_year
         if operator in {"gt", "gte", "lt", "lte"}:
             try:
                 current_num = float(current)
@@ -1509,15 +1546,35 @@ def _apply_transform_plan_with_pandas(records: List[Dict[str, Any]], plan: Dict[
                 operator = str(condition.get("operator", "equals")).lower()
                 value = condition.get("value")
                 if operator == "equals":
-                    df = df[df[field] == value]
+                    numeric_series = pd.to_numeric(df[field], errors="coerce")
+                    try:
+                        value_num = float(value)
+                        df = df[(numeric_series == value_num) | (df[field].astype(str).str.lower() == str(value).lower())]
+                    except (TypeError, ValueError):
+                        df = df[df[field].astype(str).str.lower() == str(value).lower()]
                 elif operator == "not_equals":
-                    df = df[df[field] != value]
+                    numeric_series = pd.to_numeric(df[field], errors="coerce")
+                    try:
+                        value_num = float(value)
+                        df = df[(numeric_series != value_num) & (df[field].astype(str).str.lower() != str(value).lower())]
+                    except (TypeError, ValueError):
+                        df = df[df[field].astype(str).str.lower() != str(value).lower()]
                 elif operator == "contains":
                     df = df[df[field].astype(str).str.contains(str(value), case=False, na=False)]
                 elif operator == "is_null":
                     df = df[df[field].isna()]
                 elif operator == "not_null":
                     df = df[df[field].notna()]
+                elif operator == "year_equals":
+                    try:
+                        expected_year = int(float(value))
+                    except (TypeError, ValueError):
+                        match = re.search(r"(19|20)\d{2}", str(value))
+                        if not match:
+                            continue
+                        expected_year = int(match.group(0))
+                    years = df[field].astype(str).str.extract(r"((?:19|20)\d{2})", expand=False)
+                    df = df[pd.to_numeric(years, errors="coerce") == expected_year]
                 elif operator in {"gt", "gte", "lt", "lte"}:
                     num_series = pd.to_numeric(df[field], errors="coerce")
                     try:
