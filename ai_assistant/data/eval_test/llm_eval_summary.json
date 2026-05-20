@@ -1,0 +1,55 @@
+{
+  "summary": {
+    "count": 1,
+    "successful_count": 0,
+    "failed_count": 1,
+    "micro_precision": 0.0,
+    "micro_recall": 0.0,
+    "micro_f1": 0.0,
+    "macro_precision": 0.0,
+    "macro_recall": 0.0,
+    "macro_f1": 0.0,
+    "avg_case_precision": 0.0,
+    "avg_case_recall": 0.0,
+    "avg_case_f1": 0.0,
+    "avg_successful_case_f1": 0.0,
+    "exact_match_rate": 0.0,
+    "avg_response_time_sec": 1.0242002999875695,
+    "avg_successful_response_time_sec": 0.0,
+    "max_response_time_sec": 1.0242002999875695,
+    "avg_cpu_percent": 36.52,
+    "max_cpu_percent": 48.0,
+    "avg_ram_percent": 87.56,
+    "max_ram_percent": 87.6,
+    "avg_ram_percent_of_16gb": 85.87116241455078,
+    "max_ram_percent_of_16gb": 85.92116832733154,
+    "error_rate": 1.0
+  },
+  "results": [
+    {
+      "prompt": "Afficher la liste des clients",
+      "status_code": 0,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Read timed out. (read timeout=1.0)",
+      "response_time_sec": 1.0242002999875695,
+      "cpu_avg": 36.52,
+      "cpu_max": 48.0,
+      "ram_avg_percent": 87.56,
+      "ram_max_percent": 87.6,
+      "ram_max_mb": 14077.32421875,
+      "ram_avg_percent_of_16gb": 85.87116241455078,
+      "ram_max_percent_of_16gb": 85.92116832733154,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "expected_labels": [
+        "domain:commercial",
+        "endpoint:api/commandeclient/getallclients",
+        "endpoint:webapi_get_api_commande_client_get_all_clients",
+        "entity:clients",
+        "intent:get"
+      ],
+      "predicted_labels": []
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "count": 1,
+    "successful_count": 0,
+    "failed_count": 1,
+    "micro_precision": 0.0,
+    "micro_recall": 0.0,
+    "micro_f1": 0.0,
+    "macro_precision": 0.0,
+    "macro_recall": 0.0,
+    "macro_f1": 0.0,
+    "avg_case_precision": 0.0,
+    "avg_case_recall": 0.0,
+    "avg_case_f1": 0.0,
+    "avg_successful_case_f1": 0.0,
+    "exact_match_rate": 0.0,
+    "avg_response_time_sec": 0.0036800000234507024,
+    "avg_successful_response_time_sec": 0.0,
+    "max_response_time_sec": 0.0036800000234507024,
+    "avg_cpu_percent": 35.2,
+    "max_cpu_percent": 35.2,
+    "avg_ram_percent": 86.9,
+    "max_ram_percent": 86.9,
+    "avg_ram_percent_of_16gb": 85.22698879241943,
+    "max_ram_percent_of_16gb": 85.22698879241943,
+    "error_rate": 1.0
+  },
+  "results": [
+    {
+      "prompt": "Afficher la liste des clients",
+      "status_code": 0,
+      "error": "No module named 'ai_assistant'",
+      "response_time_sec": 0.0036800000234507024,
+      "cpu_avg": 35.2,
+      "cpu_max": 35.2,
+      "ram_avg_percent": 86.9,
+      "ram_max_percent": 86.9,
+      "ram_max_mb": 13963.58984375,
+      "ram_avg_percent_of_16gb": 85.22698879241943,
+      "ram_max_percent_of_16gb": 85.22698879241943,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "expected_labels": [
+        "entity:clients"
+      ],
+      "predicted_labels": []
+    }
+  ]
+}

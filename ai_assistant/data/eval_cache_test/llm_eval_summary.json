@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "count": 1,
+    "successful_count": 0,
+    "failed_count": 1,
+    "micro_precision": 0.0,
+    "micro_recall": 0.0,
+    "micro_f1": 0.0,
+    "macro_precision": 0.0,
+    "macro_recall": 0.0,
+    "macro_f1": 0.0,
+    "avg_case_precision": 0.0,
+    "avg_case_recall": 0.0,
+    "avg_case_f1": 0.0,
+    "avg_successful_case_f1": 0.0,
+    "exact_match_rate": 0.0,
+    "avg_response_time_sec": 0.0031248999875970185,
+    "avg_successful_response_time_sec": 0.0,
+    "max_response_time_sec": 0.0031248999875970185,
+    "avg_cpu_percent": 29.3,
+    "max_cpu_percent": 29.3,
+    "avg_ram_percent": 95.5,
+    "max_ram_percent": 95.5,
+    "avg_ram_percent_of_16gb": 93.64721775054932,
+    "max_ram_percent_of_16gb": 93.64721775054932,
+    "error_rate": 1.0
+  },
+  "results": [
+    {
+      "prompt": "Afficher la liste des clients",
+      "status_code": 0,
+      "error": "No matching cache result found for this prompt.",
+      "response_time_sec": 0.0031248999875970185,
+      "cpu_avg": 29.3,
+      "cpu_max": 29.3,
+      "ram_avg_percent": 95.5,
+      "ram_max_percent": 95.5,
+      "ram_max_mb": 15343.16015625,
+      "ram_avg_percent_of_16gb": 93.64721775054932,
+      "ram_max_percent_of_16gb": 93.64721775054932,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "expected_labels": [
+        "endpoint:api/commandeclient/getallclients",
+        "endpoint:webapi_get_api_commande_client_get_all_clients",
+        "entity:clients"
+      ],
+      "predicted_labels": []
+    }
+  ]
+}

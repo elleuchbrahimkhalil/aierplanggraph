@@ -1,0 +1,8 @@
+requests
+langgraph
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+psutil

@@ -1,0 +1,2 @@
+prompt,status_code,error,precision,recall,f1,exact_match,response_time_sec,cpu_avg,cpu_max,ram_avg_percent,ram_max_percent,ram_max_mb,ram_avg_percent_of_16gb,ram_max_percent_of_16gb,expected_labels,predicted_labels
+Afficher la liste des clients,0,No matching cache result found for this prompt.,0.0,0.0,0.0,0.0,0.0031248999875970185,29.3,29.3,95.5,95.5,15343.16015625,93.64721775054932,93.64721775054932,"[""endpoint:api/commandeclient/getallclients"", ""endpoint:webapi_get_api_commande_client_get_all_clients"", ""entity:clients""]",[]

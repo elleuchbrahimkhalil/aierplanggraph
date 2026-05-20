@@ -1,0 +1,817 @@
+{
+  "summary": {
+    "count": 26,
+    "successful_count": 26,
+    "failed_count": 0,
+    "precision": 0.2277014652014652,
+    "recall": 0.3365384615384615,
+    "f1": 0.2508880008880009,
+    "avg_case_precision": 0.2277014652014652,
+    "avg_case_recall": 0.3365384615384615,
+    "avg_case_f1": 0.2508880008880009,
+    "avg_successful_case_f1": 0.2508880008880009,
+    "exact_match_rate": 0.0,
+    "avg_response_time_sec": 190.79369302307688,
+    "avg_successful_response_time_sec": 190.79369302307688,
+    "max_response_time_sec": 249.95643640000003,
+    "avg_hallucination_rate": 0.7722985347985348,
+    "avg_hallucination_count": 3.6538461538461537,
+    "avg_cpu_percent": 29.67626004555105,
+    "max_cpu_percent": 100.0,
+    "avg_ram_percent": 86.35602766114414,
+    "max_ram_percent": 99.9,
+    "avg_ram_percent_of_16gb": 84.69381932161846,
+    "max_ram_percent_of_16gb": 97.99728393554688,
+    "error_rate": 0.0
+  },
+  "results": [
+    {
+      "prompt": "Afficher la liste des clients",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 249.95643640000003,
+      "cpu_avg": 52.757474747474745,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 90.53484848484848,
+      "ram_max_percent": 99.9,
+      "ram_max_mb": 16055.875,
+      "ram_avg_percent_of_16gb": 88.79315884426387,
+      "ram_max_percent_of_16gb": 97.99728393554688,
+      "precision": 0.3333333333333333,
+      "recall": 1.0,
+      "f1": 0.5,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.6666666666666666,
+      "hallucination_count": 2.0,
+      "expected_labels": [
+        "entity:client"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:raison",
+        "group_by:tel"
+      ]
+    },
+    {
+      "prompt": "Afficher le code, le nom et le telephone des clients",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 204.92529049999996,
+      "cpu_avg": 45.82226322263222,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 94.58708487084871,
+      "ram_max_percent": 97.5,
+      "ram_max_mb": 15667.53125,
+      "ram_avg_percent_of_16gb": 92.76905614071667,
+      "ram_max_percent_of_16gb": 95.62702178955078,
+      "precision": 0.25,
+      "recall": 0.25,
+      "f1": 0.25,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.75,
+      "hallucination_count": 3.0,
+      "expected_labels": [
+        "entity:client",
+        "requested_field:cod_clt",
+        "requested_field:raison",
+        "requested_field:tel"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "operation:select",
+        "requested_field:nom",
+        "requested_field:telephone"
+      ]
+    },
+    {
+      "prompt": "Afficher les clients avec email renseigne",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 179.01739049999992,
+      "cpu_avg": 31.30337552742616,
+      "cpu_max": 82.7,
+      "ram_avg_percent": 85.56947960618847,
+      "ram_max_percent": 89.3,
+      "ram_max_mb": 14352.0625,
+      "ram_avg_percent_of_16gb": 83.92354932347766,
+      "ram_max_percent_of_16gb": 87.59803771972656,
+      "precision": 0.2857142857142857,
+      "recall": 0.6666666666666666,
+      "f1": 0.4,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.7142857142857143,
+      "hallucination_count": 5.0,
+      "expected_labels": [
+        "entity:client",
+        "filter:email:not_null:__ignored__",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "filter:with email:equals:['raison', 'tel']",
+        "operation:filter_rows",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:raison",
+        "requested_field:tel"
+      ]
+    },
+    {
+      "prompt": "Afficher les clients dont le solde reel est superieur a 0",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 147.62759660000006,
+      "cpu_avg": 22.130494037478705,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 84.02487223168654,
+      "ram_max_percent": 86.1,
+      "ram_max_mb": 13840.37109375,
+      "ram_avg_percent_of_16gb": 82.40665378115652,
+      "ram_max_percent_of_16gb": 84.47492122650146,
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1": 0.4,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:client",
+        "filter:solde_reel:gt:0",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:solde_reel"
+      ]
+    },
+    {
+      "prompt": "Afficher les clients bloques",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 186.07522329999983,
+      "cpu_avg": 28.09743243243243,
+      "cpu_max": 68.9,
+      "ram_avg_percent": 82.43351351351352,
+      "ram_max_percent": 83.1,
+      "ram_max_mb": 13354.53125,
+      "ram_avg_percent_of_16gb": 80.84333632443402,
+      "ram_max_percent_of_16gb": 81.50959014892578,
+      "precision": 0.125,
+      "recall": 0.3333333333333333,
+      "f1": 0.18181818181818182,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.875,
+      "hallucination_count": 7.0,
+      "expected_labels": [
+        "entity:client",
+        "filter:est_bloque:equals:1",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:cod_clt",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:raison",
+        "requested_field:solde_reel",
+        "requested_field:soldemax",
+        "requested_field:tel"
+      ]
+    },
+    {
+      "prompt": "Afficher les fournisseurs",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 180.57372889999988,
+      "cpu_avg": 29.485236768802228,
+      "cpu_max": 84.1,
+      "ram_avg_percent": 82.04832869080781,
+      "ram_max_percent": 82.7,
+      "ram_max_mb": 13294.9609375,
+      "ram_avg_percent_of_16gb": 80.46989650115329,
+      "ram_max_percent_of_16gb": 81.1460018157959,
+      "precision": 0.3333333333333333,
+      "recall": 1.0,
+      "f1": 0.5,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.6666666666666666,
+      "hallucination_count": 2.0,
+      "expected_labels": [
+        "entity:fournisseur"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "group_by:adresse",
+        "group_by:nom"
+      ]
+    },
+    {
+      "prompt": "Afficher le code, la raison sociale et l'adresse des fournisseurs",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 150.52368,
+      "cpu_avg": 27.966444073455758,
+      "cpu_max": 88.1,
+      "ram_avg_percent": 81.86928213689482,
+      "ram_max_percent": 82.4,
+      "ram_max_mb": 13241.55859375,
+      "ram_avg_percent_of_16gb": 80.2958623793766,
+      "ram_max_percent_of_16gb": 80.82005977630615,
+      "precision": 0.5,
+      "recall": 0.25,
+      "f1": 0.3333333333333333,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:fournisseur",
+        "requested_field:adresse",
+        "requested_field:cod_frs",
+        "requested_field:raison"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "group_by:cod_frs"
+      ]
+    },
+    {
+      "prompt": "Afficher les fournisseurs avec email renseigne",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 189.5844397000003,
+      "cpu_avg": 31.084462151394423,
+      "cpu_max": 96.1,
+      "ram_avg_percent": 83.6925630810093,
+      "ram_max_percent": 87.6,
+      "ram_max_mb": 14078.41015625,
+      "ram_avg_percent_of_16gb": 82.0787421577322,
+      "ram_max_percent_of_16gb": 85.92779636383057,
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1": 0.4,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:fournisseur",
+        "filter:email:not_null:__ignored__",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "group_by:raison"
+      ]
+    },
+    {
+      "prompt": "Afficher les fournisseurs dont le solde reel est superieur a 500",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 176.8599380999999,
+      "cpu_avg": 23.515504978662875,
+      "cpu_max": 67.6,
+      "ram_avg_percent": 87.12304409672831,
+      "ram_max_percent": 89.6,
+      "ram_max_mb": 14392.6171875,
+      "ram_avg_percent_of_16gb": 85.44496258834687,
+      "ram_max_percent_of_16gb": 87.8455638885498,
+      "precision": 0.6666666666666666,
+      "recall": 0.6666666666666666,
+      "f1": 0.6666666666666666,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.3333333333333333,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:fournisseur",
+        "filter:solde_reel:gt:500",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "filter:solde_reel:equals:> 500",
+        "operation:filter_rows"
+      ]
+    },
+    {
+      "prompt": "Afficher les articles",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 182.87358919999997,
+      "cpu_avg": 27.18390646492435,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 88.37152682255847,
+      "ram_max_percent": 89.1,
+      "ram_max_mb": 14321.9609375,
+      "ram_avg_percent_of_16gb": 86.67368134573368,
+      "ram_max_percent_of_16gb": 87.4143123626709,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6666666666666666,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:article"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "group_by:cod_art"
+      ]
+    },
+    {
+      "prompt": "Afficher le code, la designation et le prix TTC des articles",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 189.45279440000013,
+      "cpu_avg": 33.938778220451525,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 87.89681274900398,
+      "ram_max_percent": 89.2,
+      "ram_max_mb": 14340.85546875,
+      "ram_avg_percent_of_16gb": 86.19856859741616,
+      "ram_max_percent_of_16gb": 87.52963542938232,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6666666666666666,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 4.0,
+      "expected_labels": [
+        "entity:article",
+        "requested_field:cod_art",
+        "requested_field:desg_art",
+        "requested_field:pvuttc"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "filter:with_email:equals:false",
+        "operation:filter_rows",
+        "operation:select",
+        "requested_field:cod_art",
+        "requested_field:desg_art",
+        "requested_field:pvht",
+        "requested_field:pvuttc"
+      ]
+    },
+    {
+      "prompt": "Afficher les articles vendables",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 182.78149159999975,
+      "cpu_avg": 22.80716253443526,
+      "cpu_max": 86.3,
+      "ram_avg_percent": 87.88484848484849,
+      "ram_max_percent": 89.4,
+      "ram_max_mb": 14366.51953125,
+      "ram_avg_percent_of_16gb": 86.19391284369897,
+      "ram_max_percent_of_16gb": 87.68627643585205,
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.8,
+      "hallucination_count": 4.0,
+      "expected_labels": [
+        "entity:article",
+        "filter:est_vendable:equals:1",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "operation:select",
+        "requested_field:desg_art",
+        "requested_field:pvht",
+        "requested_field:pvuttc"
+      ]
+    },
+    {
+      "prompt": "Afficher les articles dont le prix TTC est superieur ou egal a 100",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 171.52839600000016,
+      "cpu_avg": 21.45542521994135,
+      "cpu_max": 100.0,
+      "ram_avg_percent": 87.95454545454545,
+      "ram_max_percent": 88.7,
+      "ram_max_mb": 14253.57421875,
+      "ram_avg_percent_of_16gb": 86.261114347016,
+      "ram_max_percent_of_16gb": 86.9969129562378,
+      "precision": 0.25,
+      "recall": 0.3333333333333333,
+      "f1": 0.28571428571428575,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.75,
+      "hallucination_count": 3.0,
+      "expected_labels": [
+        "entity:article",
+        "filter:pvuttc:gte:100",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "operation:select",
+        "requested_field:desg_art",
+        "requested_field:pvuttc"
+      ]
+    },
+    {
+      "prompt": "Afficher les familles d'articles",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 173.95215740000003,
+      "cpu_avg": 23.154335260115605,
+      "cpu_max": 84.2,
+      "ram_avg_percent": 88.49971098265895,
+      "ram_max_percent": 89.4,
+      "ram_max_mb": 14366.2265625,
+      "ram_avg_percent_of_16gb": 86.79731443438227,
+      "ram_max_percent_of_16gb": 87.68448829650879,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 5.0,
+      "expected_labels": [
+        "entity:famille_article",
+        "requested_field:cod_fam",
+        "requested_field:desg_fam"
+      ],
+      "predicted_labels": [
+        "entity:famille d'article",
+        "group_by:cod_art",
+        "operation:select",
+        "requested_field:desg_art",
+        "requested_field:name"
+      ]
+    },
+    {
+      "prompt": "Afficher les lots de stock de l'article ABC123",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 190.0935654,
+      "cpu_avg": 27.334126984126986,
+      "cpu_max": 76.3,
+      "ram_avg_percent": 87.25410052910053,
+      "ram_max_percent": 90.3,
+      "ram_max_mb": 14505.79296875,
+      "ram_avg_percent_of_16gb": 85.57493260928563,
+      "ram_max_percent_of_16gb": 88.53633403778076,
+      "precision": 0.16666666666666666,
+      "recall": 0.3333333333333333,
+      "f1": 0.2222222222222222,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.8333333333333334,
+      "hallucination_count": 5.0,
+      "expected_labels": [
+        "entity:lot_stock",
+        "filter:cod_art:equals:abc123",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "filter:code_art:equals:",
+        "filter:desg_art:equals:",
+        "filter:pvht:equals:",
+        "filter:pvuttc:equals:",
+        "operation:filter_rows"
+      ]
+    },
+    {
+      "prompt": "Afficher les lots achetes en 2024",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 233.75384770000028,
+      "cpu_avg": 36.219268030139936,
+      "cpu_max": 81.3,
+      "ram_avg_percent": 85.3470398277718,
+      "ram_max_percent": 85.9,
+      "ram_max_mb": 13806.2890625,
+      "ram_avg_percent_of_16gb": 83.7051597170219,
+      "ram_max_percent_of_16gb": 84.26690101623535,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 7.0,
+      "expected_labels": [
+        "entity:lot_stock",
+        "filter:date_achat:year_equals:2024",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:cod_clt",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:raison",
+        "requested_field:solde_reel",
+        "requested_field:soldemax"
+      ]
+    },
+    {
+      "prompt": "Afficher les bons de livraison client",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 195.66902300000038,
+      "cpu_avg": 24.13611825192802,
+      "cpu_max": 77.8,
+      "ram_avg_percent": 84.84897172236504,
+      "ram_max_percent": 86.5,
+      "ram_max_mb": 13897.8046875,
+      "ram_avg_percent_of_16gb": 83.21976649424104,
+      "ram_max_percent_of_16gb": 84.82546806335449,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 8.0,
+      "expected_labels": [
+        "entity:bl_client"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:cod_clt",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:raison",
+        "requested_field:solde_reel",
+        "requested_field:soldemax",
+        "requested_field:tel"
+      ]
+    },
+    {
+      "prompt": "Afficher les BL client de l'annee 2024",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 187.46845219999977,
+      "cpu_avg": 20.454362416107383,
+      "cpu_max": 55.6,
+      "ram_avg_percent": 84.71946308724833,
+      "ram_max_percent": 85.2,
+      "ram_max_mb": 13692.9609375,
+      "ram_avg_percent_of_16gb": 83.0894900328361,
+      "ram_max_percent_of_16gb": 83.5752010345459,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 8.0,
+      "expected_labels": [
+        "entity:bl_client",
+        "filter:dat_bl:year_equals:2024",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "group_by:cod_clt",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:raison",
+        "requested_field:solde_reel",
+        "requested_field:soldemax",
+        "requested_field:tel"
+      ]
+    },
+    {
+      "prompt": "Afficher les BL client avec reste a payer superieur a 0",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 189.12433399999964,
+      "cpu_avg": 25.526994680851065,
+      "cpu_max": 79.8,
+      "ram_avg_percent": 85.17539893617021,
+      "ram_max_percent": 86.0,
+      "ram_max_mb": 13812.9140625,
+      "ram_avg_percent_of_16gb": 83.53762281067829,
+      "ram_max_percent_of_16gb": 84.30733680725098,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 5.0,
+      "expected_labels": [
+        "entity:bl_client",
+        "filter:reste:gt:0",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:facture",
+        "group_by:cod_clt",
+        "operation:select",
+        "requested_field:num_fact_clt",
+        "requested_field:reste"
+      ]
+    },
+    {
+      "prompt": "Afficher les commandes du BL client BL2024001",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 180.95557009999993,
+      "cpu_avg": 27.573018080667595,
+      "cpu_max": 84.9,
+      "ram_avg_percent": 85.34047287899861,
+      "ram_max_percent": 86.4,
+      "ram_max_mb": 13876.76171875,
+      "ram_avg_percent_of_16gb": 83.69626030636762,
+      "ram_max_percent_of_16gb": 84.69703197479248,
+      "precision": 0.14285714285714285,
+      "recall": 0.3333333333333333,
+      "f1": 0.2,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.8571428571428571,
+      "hallucination_count": 6.0,
+      "expected_labels": [
+        "entity:commande_client",
+        "filter:numblclient:equals:bl2024001",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:client",
+        "filter:cod_clt:equals:",
+        "filter:raison:equals:",
+        "filter:solde_reel:equals:",
+        "filter:soldemax:equals:",
+        "filter:tel:equals:",
+        "operation:filter_rows"
+      ]
+    },
+    {
+      "prompt": "Afficher les bons de livraison fournisseurs",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 222.4271963000001,
+      "cpu_avg": 41.65816326530612,
+      "cpu_max": 97.0,
+      "ram_avg_percent": 86.32448979591837,
+      "ram_max_percent": 88.9,
+      "ram_max_mb": 14289.6875,
+      "ram_avg_percent_of_16gb": 84.66311120121928,
+      "ram_max_percent_of_16gb": 87.21733093261719,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 3.0,
+      "expected_labels": [
+        "entity:bl_fournisseur"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "group_by:raison",
+        "group_by:solde_reel"
+      ]
+    },
+    {
+      "prompt": "Afficher les BL fournisseur dont le net est superieur ou egal a 1000",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 207.4810054999998,
+      "cpu_avg": 30.317575757575757,
+      "cpu_max": 73.2,
+      "ram_avg_percent": 86.48169696969697,
+      "ram_max_percent": 87.2,
+      "ram_max_mb": 14017.296875,
+      "ram_avg_percent_of_16gb": 84.81642318494391,
+      "ram_max_percent_of_16gb": 85.55479049682617,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 2.0,
+      "expected_labels": [
+        "entity:bl_fournisseur",
+        "filter:net:gte:1000",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:fournisseur",
+        "group_by:num_fact_clt"
+      ]
+    },
+    {
+      "prompt": "Afficher les demandes de conge validees",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 201.80769189999955,
+      "cpu_avg": 29.42219451371571,
+      "cpu_max": 83.4,
+      "ram_avg_percent": 86.62319201995012,
+      "ram_max_percent": 87.3,
+      "ram_max_mb": 14032.83984375,
+      "ram_avg_percent_of_16gb": 84.95763284607123,
+      "ram_max_percent_of_16gb": 85.64965724945068,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 3.0,
+      "expected_labels": [
+        "entity:conge",
+        "filter:est_valide:equals:1",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:demande de conge",
+        "group_by:raison",
+        "group_by:solde_reel"
+      ]
+    },
+    {
+      "prompt": "Afficher les employes avec salaire brut superieur a 2000",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 193.50959160000002,
+      "cpu_avg": 28.86514954486346,
+      "cpu_max": 76.0,
+      "ram_avg_percent": 86.83797139141743,
+      "ram_max_percent": 87.3,
+      "ram_max_mb": 14033.27734375,
+      "ram_avg_percent_of_16gb": 85.1646259330184,
+      "ram_max_percent_of_16gb": 85.65232753753662,
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1": 0.4,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.5,
+      "hallucination_count": 1.0,
+      "expected_labels": [
+        "entity:employe",
+        "filter:salaire_brut:gt:2000",
+        "operation:filter_rows"
+      ],
+      "predicted_labels": [
+        "entity:employe",
+        "group_by:salaire_brut"
+      ]
+    },
+    {
+      "prompt": "Afficher le total des ventes par article",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 198.06976639999993,
+      "cpu_avg": 29.60889453621347,
+      "cpu_max": 93.9,
+      "ram_avg_percent": 87.06010165184244,
+      "ram_max_percent": 88.0,
+      "ram_max_mb": 14143.32421875,
+      "ram_avg_percent_of_16gb": 85.38308967629109,
+      "ram_max_percent_of_16gb": 86.32400035858154,
+      "precision": 0.16666666666666666,
+      "recall": 0.25,
+      "f1": 0.2,
+      "exact_match": 0.0,
+      "hallucination_rate": 0.8333333333333334,
+      "hallucination_count": 5.0,
+      "expected_labels": [
+        "agg:totalht:sum",
+        "entity:stats_vente",
+        "group_by:cod_art",
+        "operation:aggregate"
+      ],
+      "predicted_labels": [
+        "entity:ventes",
+        "group_by:cod_art",
+        "operation:select",
+        "requested_field:chiffre_d_affaire",
+        "requested_field:pvht",
+        "requested_field:pvuttc"
+      ]
+    },
+    {
+      "prompt": "Afficher la quantite vendue par article",
+      "status_code": 200,
+      "error": "",
+      "response_time_sec": 194.54382189999978,
+      "cpu_avg": 29.764599483204133,
+      "cpu_max": 94.8,
+      "ram_avg_percent": 86.75335917312661,
+      "ram_max_percent": 87.5,
+      "ram_max_mb": 14057.8359375,
+      "ram_avg_percent_of_16gb": 85.08137794120059,
+      "ram_max_percent_of_16gb": 85.80222129821777,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "exact_match": 0.0,
+      "hallucination_rate": 1.0,
+      "hallucination_count": 2.0,
+      "expected_labels": [
+        "agg:qte_fact:sum",
+        "entity:stats_vente",
+        "group_by:cod_art",
+        "operation:aggregate"
+      ],
+      "predicted_labels": [
+        "entity:article",
+        "group_by:code_art"
+      ]
+    }
+  ]
+}

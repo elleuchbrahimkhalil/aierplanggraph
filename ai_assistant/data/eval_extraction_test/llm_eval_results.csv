@@ -1,0 +1,2 @@
+prompt,status_code,error,precision,recall,f1,exact_match,response_time_sec,cpu_avg,cpu_max,ram_avg_percent,ram_max_percent,ram_max_mb,ram_avg_percent_of_16gb,ram_max_percent_of_16gb,expected_labels,predicted_labels
+Afficher la liste des clients,0,No module named 'ai_assistant',0.0,0.0,0.0,0.0,0.0036800000234507024,35.2,35.2,86.9,86.9,13963.58984375,85.22698879241943,85.22698879241943,"[""entity:clients""]",[]

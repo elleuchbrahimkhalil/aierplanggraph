@@ -1,0 +1,310 @@
+{
+  "description": "Dataset d'evaluation extraction/transform base sur les endpoints GET reels, le mapping metier et les plans de transformation. Les routes endpoints ne sont pas scorees; on evalue l'entite, les champs demandes, les filtres, les operations, group_by et aggregations.",
+  "schema_version": "2026-05-20-extraction-transform",
+  "label_prefixes": [
+    "entity:",
+    "requested_field:",
+    "filter:",
+    "operation:",
+    "group_by:",
+    "agg:"
+  ],
+  "evaluation_cases": [
+    {
+      "prompt": "Afficher la liste des clients",
+      "expected": {
+        "labels": ["entity:client"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher le code, le nom et le telephone des clients",
+      "expected": {
+        "labels": ["entity:client"],
+        "requested_fields": ["cod_clt", "raison", "tel"],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les clients avec email renseigne",
+      "expected": {
+        "labels": ["entity:client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "email", "operator": "not_null", "value": null }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les clients dont le solde reel est superieur a 0",
+      "expected": {
+        "labels": ["entity:client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "solde_reel", "operator": "gt", "value": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les clients bloques",
+      "expected": {
+        "labels": ["entity:client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "est_bloque", "operator": "equals", "value": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les fournisseurs",
+      "expected": {
+        "labels": ["entity:fournisseur"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher le code, la raison sociale et l'adresse des fournisseurs",
+      "expected": {
+        "labels": ["entity:fournisseur"],
+        "requested_fields": ["cod_frs", "raison", "adresse"],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les fournisseurs avec email renseigne",
+      "expected": {
+        "labels": ["entity:fournisseur", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "email", "operator": "not_null", "value": null }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les fournisseurs dont le solde reel est superieur a 500",
+      "expected": {
+        "labels": ["entity:fournisseur", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "solde_reel", "operator": "gt", "value": 500 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les articles",
+      "expected": {
+        "labels": ["entity:article"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher le code, la designation et le prix TTC des articles",
+      "expected": {
+        "labels": ["entity:article"],
+        "requested_fields": ["cod_art", "desg_art", "pvuttc"],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les articles vendables",
+      "expected": {
+        "labels": ["entity:article", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "est_vendable", "operator": "equals", "value": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les articles dont le prix TTC est superieur ou egal a 100",
+      "expected": {
+        "labels": ["entity:article", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "pvuttc", "operator": "gte", "value": 100 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les familles d'articles",
+      "expected": {
+        "labels": ["entity:famille_article"],
+        "requested_fields": ["cod_fam", "desg_fam"],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les lots de stock de l'article ABC123",
+      "expected": {
+        "labels": ["entity:lot_stock", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "cod_art", "operator": "equals", "value": "ABC123" }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les lots achetes en 2024",
+      "expected": {
+        "labels": ["entity:lot_stock", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "date_achat", "operator": "year_equals", "value": 2024 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les bons de livraison client",
+      "expected": {
+        "labels": ["entity:bl_client"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les BL client de l'annee 2024",
+      "expected": {
+        "labels": ["entity:bl_client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "dat_bl", "operator": "year_equals", "value": 2024 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les BL client avec reste a payer superieur a 0",
+      "expected": {
+        "labels": ["entity:bl_client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "reste", "operator": "gt", "value": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les commandes du BL client BL2024001",
+      "expected": {
+        "labels": ["entity:commande_client", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "numBlClient", "operator": "equals", "value": "BL2024001" }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les bons de livraison fournisseurs",
+      "expected": {
+        "labels": ["entity:bl_fournisseur"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": []
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les BL fournisseur dont le net est superieur ou egal a 1000",
+      "expected": {
+        "labels": ["entity:bl_fournisseur", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "net", "operator": "gte", "value": 1000 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les demandes de conge validees",
+      "expected": {
+        "labels": ["entity:conge", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "est_valide", "operator": "equals", "value": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher les employes avec salaire brut superieur a 2000",
+      "expected": {
+        "labels": ["entity:employe", "operation:filter_rows"],
+        "requested_fields": [],
+        "extracted_params": {
+          "filters": [
+            { "field": "salaire_brut", "operator": "gt", "value": 2000 }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher le total des ventes par article",
+      "expected": {
+        "labels": ["entity:stats_vente", "operation:aggregate"],
+        "requested_fields": [],
+        "extracted_params": {
+          "group_by": ["cod_art"],
+          "aggregations": [
+            { "field": "totalht", "agg": "sum", "as": "total_vente" }
+          ]
+        }
+      }
+    },
+    {
+      "prompt": "Afficher la quantite vendue par article",
+      "expected": {
+        "labels": ["entity:stats_vente", "operation:aggregate"],
+        "requested_fields": [],
+        "extracted_params": {
+          "group_by": ["cod_art"],
+          "aggregations": [
+            { "field": "qte_fact", "agg": "sum", "as": "quantite_vendue" }
+          ]
+        }
+      }
+    }
+  ]
+}

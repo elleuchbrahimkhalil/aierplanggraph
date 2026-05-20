@@ -1,0 +1,94 @@
+{
+  "description": "Prompts de test derives des endpoints GET reels et du mapping metier. Ils couvrent l'extraction de champs, filtres, conditions type WHERE et agregations; la route endpoint n'est pas l'objectif principal de ce fichier.",
+  "schema_version": "2026-05-20-extraction-transform",
+  "prompts": [
+    {
+      "entity": "client",
+      "available_columns": ["cod_clt", "raison", "tel", "email", "solde_reel", "soldemax", "chiffre_d_affaire", "est_bloque"],
+      "prompts": [
+        "Afficher la liste des clients",
+        "Afficher le code, le nom et le telephone des clients",
+        "Afficher les clients avec email renseigne",
+        "Afficher les clients dont le solde reel est superieur a 0",
+        "Afficher les clients bloques"
+      ]
+    },
+    {
+      "entity": "fournisseur",
+      "available_columns": ["cod_frs", "raison", "adresse", "tel", "email", "solde_reel", "chiffre_d_affaire", "est_bloque"],
+      "prompts": [
+        "Afficher les fournisseurs",
+        "Afficher le code, la raison sociale et l'adresse des fournisseurs",
+        "Afficher les fournisseurs avec email renseigne",
+        "Afficher les fournisseurs dont le solde reel est superieur a 500",
+        "Afficher les fournisseurs bloques"
+      ]
+    },
+    {
+      "entity": "article",
+      "available_columns": ["cod_art", "desg_art", "pvht", "pvuttc", "qmin_art", "cod_fam", "est_vendable"],
+      "prompts": [
+        "Afficher les articles",
+        "Afficher le code, la designation et le prix TTC des articles",
+        "Afficher les articles vendables",
+        "Afficher les articles dont le prix TTC est superieur ou egal a 100",
+        "Afficher les articles de la famille FAM01"
+      ]
+    },
+    {
+      "entity": "lot_stock",
+      "available_columns": ["code", "cod_frs", "raison", "num_lot", "date_achat", "date_exp", "cod_art", "desg_art", "etat"],
+      "prompts": [
+        "Afficher les lots de stock",
+        "Afficher les lots de stock de l'article ABC123",
+        "Afficher les lots achetes en 2024",
+        "Afficher les lots dont l'etat contient disponible",
+        "Afficher les lots dont le numero contient LOT24"
+      ]
+    },
+    {
+      "entity": "bl_client",
+      "available_columns": ["num_bl_clt", "cod_clt", "rais_soc_clt", "dat_bl", "cod_dep", "totalht", "totalttc", "net", "reste"],
+      "prompts": [
+        "Afficher les bons de livraison client",
+        "Afficher les BL client de l'annee 2024",
+        "Afficher les BL client avec reste a payer superieur a 0",
+        "Afficher les BL client du client CLT001",
+        "Afficher les BL client dont le net est superieur ou egal a 500"
+      ]
+    },
+    {
+      "entity": "bl_fournisseur",
+      "available_columns": ["num_bl", "cod_frs", "rais_soc", "dat_bl", "etat_bl", "totalht", "totalttc", "net", "reste"],
+      "prompts": [
+        "Afficher les bons de livraison fournisseurs",
+        "Afficher les BL fournisseur dont le net est superieur ou egal a 1000",
+        "Afficher les BL fournisseur avec reste a payer superieur a 0",
+        "Afficher les BL fournisseur de l'annee 2024",
+        "Afficher les BL fournisseur du fournisseur FRS001"
+      ]
+    },
+    {
+      "entity": "rh",
+      "available_columns": ["code", "Nom", "Prenom", "Telephone", "salaire_brut", "salairenet", "chantier", "est_valide", "dat_deb", "dat_fin"],
+      "prompts": [
+        "Afficher les demandes de conge validees",
+        "Afficher les demandes de conge de l'annee 2024",
+        "Afficher les employes avec salaire brut superieur a 2000",
+        "Afficher le nom, prenom et telephone des employes",
+        "Afficher les employes du chantier CH01"
+      ]
+    },
+    {
+      "entity": "stats_vente",
+      "available_columns": ["cod_art", "desg_art", "qte_fact", "totalht", "cod_clt", "num_fact_clt", "periode"],
+      "prompts": [
+        "Afficher le total des ventes par article",
+        "Afficher la quantite vendue par article",
+        "Afficher le total des ventes par client",
+        "Afficher les ventes de l'annee 2024",
+        "Afficher le top des articles par montant total HT"
+      ]
+    }
+  ]
+}
